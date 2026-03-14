@@ -1,96 +1,81 @@
 # Incident Workbench Backend
 
-FastAPI backend for the Incident Workbench application.
+FastAPI backend for the Incident Workbench desktop application.
 
-## Phase 0 Status ✅
+## What It Currently Does
 
-Phase 0 is **complete** and fully functional:
-
-- ✅ Application boots successfully
-- ✅ Database migrations run automatically
-- ✅ Health check endpoint working
-- ✅ Jira connection testing working
-- ✅ Slack connection testing working
-- ✅ All router stubs in place
-- ✅ Exception handling configured
-- ✅ CORS middleware configured
+- Session auth with cookie + CSRF protection
+- Jira, Slack, and Slack-export incident ingestion
+- Incident listing and metrics
+- Ollama-backed embedding and clustering
+- DOCX report generation and downloads
+- SQLite migrations, idempotency, and basic observability
 
 ## Setup
 
 ```bash
-# Install dependencies
 cd backend
-pip install -e .
-
-# Run the application
-python main.py
+python3 -m venv .venv
+./.venv/bin/pip install -e ".[dev]"
 ```
 
-The server will:
-1. Find a free port on `127.0.0.1`
-2. Print the port number to stdout (first line)
-3. Run database migrations automatically
-4. Start the FastAPI server
-
-## Testing
+For local admin access, export bootstrap credentials before starting the backend:
 
 ```bash
-# Run Phase 0 smoke tests
-python test_phase0.py
+export WORKBENCH_BOOTSTRAP_ADMIN_USERNAME=local-admin
+export WORKBENCH_BOOTSTRAP_ADMIN_PASSWORD='choose-a-strong-local-password'
 ```
 
-## Database
+## Run Locally
 
-SQLite database located at: `~/.incident-workbench/incidents.db`
+Repo-preferred path:
 
-Schema includes:
-- `incidents` - Core incident data
-- `embeddings` - Text embeddings for clustering
-- `cluster_runs` - Clustering run metadata
-- `clusters` - Individual clusters
-- `cluster_members` - Many-to-many relationship
-- `reports` - Generated report metadata
-- `_migrations` - Migration tracking
+```bash
+cd ..
+bash scripts/dev.sh
+```
 
-## API Endpoints
+Backend-only path:
 
-### Health
-- `GET /health` - System health check
+```bash
+cd backend
+source .venv/bin/activate
+uvicorn main:app --host 127.0.0.1 --port 8765 --reload
+```
 
-### Settings
-- `POST /settings/test-jira` - Test Jira connection
-- `POST /settings/test-slack` - Test Slack connection
+## Verification
 
-### Ingestion (Stubs)
-- `POST /ingest/jira` - Ingest from Jira
-- `POST /ingest/slack` - Ingest from Slack
-- `POST /ingest/slack-export` - Ingest from Slack export
+Quick checks:
 
-### Incidents (Stubs)
-- `GET /incidents` - List incidents
-- `GET /incidents/{id}` - Get incident
-- `DELETE /incidents` - Delete all incidents
+```bash
+python test_phase0.py
+python test_phase1.py
+python test_phase2.py
+python test_phase5.py
+```
 
-### Clustering (Stubs)
-- `POST /clusters/run` - Run clustering
-- `GET /clusters` - List cluster runs
-- `GET /clusters/{run_id}` - Get cluster run
+Full backend gate:
 
-### Reports (Stubs)
-- `POST /reports/generate` - Generate report
-- `GET /reports` - List reports
-- `GET /reports/{id}/download` - Download report
+```bash
+cd ..
+bash .codex/scripts/run_verify_commands.sh
+```
 
-## Configuration
+That gate runs the commands listed in [`.codex/verify.commands`](../.codex/verify.commands).
 
-Environment variables (prefix `WORKBENCH_`):
-- `WORKBENCH_DB_PATH` - Database path (default: `~/.incident-workbench/incidents.db`)
-- `WORKBENCH_OLLAMA_URL` - Ollama URL (default: `http://127.0.0.1:11434`)
+## Useful Endpoints
 
-## Next Steps
+- `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /ingest/slack-export`
+- `GET /incidents`
+- `GET /incidents/metrics`
+- `POST /clusters/run`
+- `POST /reports/generate`
 
-Phase 1 implementation will add:
-- Jira ingestion functionality
-- Slack ingestion functionality
-- Embedding generation
-- Incident storage and retrieval
+## Local Smoke Fixture
+
+Use [`tests/fixtures/slack-export-smoke.json`](../tests/fixtures/slack-export-smoke.json) for deterministic local ingest and clustering checks.

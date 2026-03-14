@@ -68,16 +68,16 @@ if command -v ollama &> /dev/null; then
         if echo "$MODELS" | grep -q "nomic-embed-text"; then
             check_passed "Model nomic-embed-text is pulled"
         else
-            check_warning "Model nomic-embed-text not found. Run: ollama pull nomic-embed-text"
+            check_failed "Model nomic-embed-text not found. Run: ollama pull nomic-embed-text"
         fi
 
         if echo "$MODELS" | grep -q "llama3.2"; then
             check_passed "Model llama3.2 is pulled"
         else
-            check_warning "Model llama3.2 not found. Run: ollama pull llama3.2"
+            check_failed "Model llama3.2 not found. Run: ollama pull llama3.2"
         fi
     else
-        check_warning "Ollama server not running. Start with: ollama serve"
+        check_failed "Ollama server not running. Start with: ollama serve"
     fi
 else
     check_failed "Ollama not found. Install from https://ollama.ai"
@@ -100,10 +100,16 @@ done
 if [ -f "package.json" ]; then
     check_passed "package.json exists"
 
+    if npm ci --ignore-scripts --dry-run &> /tmp/incident-workbench-npm-ci.log; then
+        check_passed "package-lock.json is in sync with package.json"
+    else
+        check_failed "npm ci would fail. Sync package-lock.json with package.json. See /tmp/incident-workbench-npm-ci.log"
+    fi
+
     if [ -d "node_modules" ]; then
         check_passed "Node modules installed"
     else
-        check_warning "Node modules not installed. Run: npm install"
+        check_failed "Node modules not installed. Run: npm ci"
     fi
 else
     check_failed "package.json missing"
@@ -113,10 +119,10 @@ fi
 if [ -f "backend/pyproject.toml" ]; then
     check_passed "backend/pyproject.toml exists"
 
-    if [ -d ".venv" ]; then
-        check_passed "Python virtual environment exists"
+    if [ -d "backend/.venv" ]; then
+        check_passed "Backend Python virtual environment exists"
     else
-        check_warning "Python venv not created. Run: python3 -m venv .venv && .venv/bin/pip install -e ."
+        check_failed "Backend Python venv not created. Run: python3 -m venv backend/.venv && backend/.venv/bin/pip install -e \"backend/.[dev]\""
     fi
 else
     check_failed "backend/pyproject.toml missing"
@@ -134,8 +140,8 @@ echo "Testing builds..."
 echo ""
 
 # Test backend can import
-if [ -d ".venv" ]; then
-    if .venv/bin/python -c "import sys; sys.path.insert(0, 'backend'); from main import app" 2>/dev/null; then
+if [ -d "backend/.venv" ]; then
+    if backend/.venv/bin/python -c "import sys; sys.path.insert(0, 'backend'); from main import app" 2>/dev/null; then
         check_passed "Backend imports successfully"
     else
         check_failed "Backend import failed (dependencies issue?)"
@@ -162,7 +168,7 @@ if [ $FAILED -eq 0 ]; then
     echo "Ready to run:"
     echo "  bash scripts/dev.sh        # Development mode"
     echo "  npm run tauri dev          # Frontend only"
-    echo "  .venv/bin/python backend/test_phase0.py  # Backend tests"
+    echo "  cd backend && .venv/bin/python test_phase0.py  # Backend tests"
 else
     echo -e "${RED}✗ Some checks failed${NC}"
     echo ""

@@ -5,6 +5,17 @@ use std::{fs, sync::Mutex};
 use tauri::{Manager, State};
 use tauri_plugin_shell::ShellExt;
 
+fn configured_backend_port() -> u16 {
+    std::env::var("WORKBENCH_BACKEND_PORT")
+        .ok()
+        .and_then(|value| value.parse::<u16>().ok())
+        .unwrap_or(8765)
+}
+
+fn dev_mode_enabled() -> bool {
+    matches!(std::env::var("DEV_MODE").ok().as_deref(), Some("1" | "true" | "TRUE"))
+}
+
 #[tauri::command]
 fn get_backend_port(state: State<BackendPort>) -> Result<u16, String> {
     state
@@ -39,9 +50,21 @@ fn main() {
         .setup(|app| {
             let backend_port = app.state::<BackendPort>();
             let sidecar_process = app.state::<SidecarProcess>();
+            let configured_port = configured_backend_port();
+
+            if dev_mode_enabled() {
+                if let Ok(mut port) = backend_port.0.lock() {
+                    *port = Some(configured_port);
+                }
+                println!("Development mode detected; using external backend on port {configured_port}");
+                return Ok(());
+            }
 
             // Spawn the Python FastAPI sidecar
-            let sidecar_command = app.shell().sidecar("incident-workbench-api")?;
+            let sidecar_command = app
+                .shell()
+                .sidecar("incident-workbench-api")?
+                .args(["--port", &configured_port.to_string()]);
 
             // In development, the sidecar might not exist yet - that's okay
             // Production builds will have it bundled
@@ -49,12 +72,8 @@ fn main() {
                 Ok((_rx, child)) => {
                     println!("Sidecar spawned successfully");
 
-                    // TODO: Read port from rx (child.stdout)
-                    // The Python backend prints the port to stdout as first line.
-                    // We should read from rx and parse the port number.
-                    // For now, we use a hardcoded port matching backend/main.py
                     if let Ok(mut port) = backend_port.0.lock() {
-                        *port = Some(8765);
+                        *port = Some(configured_port);
                     }
 
                     // Store child process for cleanup on shutdown
@@ -65,9 +84,9 @@ fn main() {
                 Err(e) => {
                     eprintln!("Warning: Could not spawn sidecar: {}. This is expected in development mode.", e);
 
-                    // In dev mode, assume backend is running separately
+                    // In dev mode, assume the backend is running separately on the configured port.
                     if let Ok(mut port) = backend_port.0.lock() {
-                        *port = Some(8765);
+                        *port = Some(configured_port);
                     }
                 }
             }

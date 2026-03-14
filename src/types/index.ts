@@ -81,6 +81,16 @@ export interface TestConnectionResponse {
   details: Record<string, any>;
 }
 
+export interface AuthUser {
+  username: string;
+  roles: string[];
+}
+
+export interface AuthSessionResponse {
+  user: AuthUser;
+  csrf_token: string;
+}
+
 export interface HealthResponse {
   status: string;
   version?: string;
@@ -92,7 +102,11 @@ export interface HealthResponse {
 }
 
 // Progress callback type for Slack ingestion
-export type ProgressCallback = (fetchedCount: number, total: number, nextRequestIn: number) => void;
+export type ProgressCallback = (
+  fetchedCount: number,
+  total: number,
+  nextRequestIn: number,
+) => void;
 
 // Clustering types
 export interface ClusterResult {

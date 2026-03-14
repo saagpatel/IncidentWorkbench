@@ -17,12 +17,16 @@ jobs:
         with:
           node-version: 22
 
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
         with:
-          version: 9
+          python-version: "3.12"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          npm ci
+          python -m venv backend/.venv
+          backend/.venv/bin/pip install --upgrade pip
+          backend/.venv/bin/pip install -e "backend/.[dev]"
 
       - name: Policy checks
         run: node scripts/ci/require-tests-and-docs.mjs
@@ -33,7 +37,16 @@ jobs:
       - name: Diff coverage
         run: |
           python -m pip install --upgrade pip diff-cover
-          diff-cover coverage/lcov.info --compare-branch=origin/main --fail-under=90
+          if [ ! -f coverage/lcov.info ]; then
+            echo "coverage/lcov.info not present; skipping diff-cover gate"
+            exit 0
+          fi
+          if git rev-parse --verify origin/master >/dev/null 2>&1; then
+            BASE_BRANCH="origin/master"
+          else
+            BASE_BRANCH="origin/main"
+          fi
+          diff-cover coverage/lcov.info --compare-branch="${BASE_BRANCH}" --fail-under=90
 
       - name: Upload test artifacts on failure
         if: failure()

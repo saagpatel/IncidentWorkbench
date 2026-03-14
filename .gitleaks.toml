@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore generated dependencies and local build artifacts"
+paths = [
+  '''^node_modules/''',
+  '''^dist/''',
+  '''^backend/\.venv/''',
+  '''^backend/build/''',
+  '''^backend/dist/''',
+  '''^src-tauri/target/''',
+  '''^src-tauri/binaries/'''
+]

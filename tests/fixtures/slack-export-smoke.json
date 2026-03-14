@@ -1,0 +1,72 @@
+[
+  {
+    "type": "message",
+    "user": "alice",
+    "text": "SEV1 checkout outage hitting production payments",
+    "ts": "1735776000.000100",
+    "thread_ts": "1735776000.000100"
+  },
+  {
+    "type": "message",
+    "user": "bob",
+    "text": "Mitigation applied and traffic recovering",
+    "ts": "1735779600.000100",
+    "thread_ts": "1735776000.000100"
+  },
+  {
+    "type": "message",
+    "user": "carol",
+    "text": "SEV2 vpn degraded for remote support team",
+    "ts": "1735862400.000100",
+    "thread_ts": "1735862400.000100"
+  },
+  {
+    "type": "message",
+    "user": "dave",
+    "text": "Network route rolled back and access restored",
+    "ts": "1735869600.000100",
+    "thread_ts": "1735862400.000100"
+  },
+  {
+    "type": "message",
+    "user": "erin",
+    "text": "SEV3 api latency issue on internal search service",
+    "ts": "1735948800.000100",
+    "thread_ts": "1735948800.000100"
+  },
+  {
+    "type": "message",
+    "user": "frank",
+    "text": "Cache warmed and latency back within target",
+    "ts": "1735953300.000100",
+    "thread_ts": "1735948800.000100"
+  },
+  {
+    "type": "message",
+    "user": "alice",
+    "text": "SEV2 database timeout errors for warehouse sync jobs",
+    "ts": "1736035200.000100",
+    "thread_ts": "1736035200.000100"
+  },
+  {
+    "type": "message",
+    "user": "bob",
+    "text": "Connection pool limit raised and jobs resumed",
+    "ts": "1736039700.000100",
+    "thread_ts": "1736035200.000100"
+  },
+  {
+    "type": "message",
+    "user": "carol",
+    "text": "SEV4 question about backup alert noise",
+    "ts": "1736121600.000100",
+    "thread_ts": "1736121600.000100"
+  },
+  {
+    "type": "message",
+    "user": "dave",
+    "text": "Rule tuned and duplicate alerts stopped",
+    "ts": "1736124300.000100",
+    "thread_ts": "1736121600.000100"
+  }
+]

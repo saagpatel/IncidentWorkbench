@@ -2,8 +2,15 @@
  * Reports page - Generate DOCX reports with LLM summaries
  */
 
-import { useState } from "react";
-import { useClusterRuns, useGenerateReport, useMetrics, useReports, getErrorMessage } from "../api/hooks";
+import { useEffect, useState } from "react";
+import { buildBackendUrl } from "../api/client";
+import {
+  useClusterRuns,
+  useGenerateReport,
+  useMetrics,
+  useReports,
+  getErrorMessage,
+} from "../api/hooks";
 import { ChartExporter } from "../components/ChartExporter";
 import { useToastContext } from "../contexts/ToastContext";
 
@@ -13,11 +20,34 @@ export function ReportsPage() {
   const [title, setTitle] = useState("Quarterly Incident Review");
   const [quarter, setQuarter] = useState("Q1 2024");
   const [chartPngs, setChartPngs] = useState<Record<string, string>>({});
+  const [downloadBaseUrl, setDownloadBaseUrl] = useState("");
 
   const { data: runs } = useClusterRuns();
   const { data: reports } = useReports();
   const { data: metrics } = useMetrics();
   const generateMutation = useGenerateReport();
+
+  useEffect(() => {
+    let active = true;
+
+    void buildBackendUrl("/")
+      .then((url) => {
+        if (!active) {
+          return;
+        }
+
+        setDownloadBaseUrl(url.replace(/\/$/, ""));
+      })
+      .catch(() => {
+        if (active) {
+          setDownloadBaseUrl("");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleGenerate = async () => {
     if (!selectedRunId) {
@@ -39,7 +69,10 @@ export function ReportsPage() {
       });
 
       // Download the DOCX
-      window.open(`http://127.0.0.1:8765/reports/${result.report_id}/download`, "_blank");
+      const downloadUrl = await buildBackendUrl(
+        `/reports/${result.report_id}/download`,
+      );
+      window.open(downloadUrl, "_blank");
 
       // Reset form
       setChartPngs({});
@@ -54,12 +87,23 @@ export function ReportsPage() {
     <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
       <h1 style={{ marginBottom: "2rem" }}>Generate Report</h1>
 
-      <div style={{ marginBottom: "3rem", padding: "24px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
-        <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>Report Configuration</h2>
+      <div
+        style={{
+          marginBottom: "3rem",
+          padding: "24px",
+          backgroundColor: "#f9fafb",
+          borderRadius: "8px",
+        }}
+      >
+        <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>
+          Report Configuration
+        </h2>
 
         <div style={{ display: "grid", gap: "1.5rem" }}>
           <div>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            <label
+              style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}
+            >
               Select Cluster Run:
             </label>
             <select
@@ -76,15 +120,17 @@ export function ReportsPage() {
               <option value="">-- Select a cluster run --</option>
               {runs?.map((run) => (
                 <option key={run.run_id} value={run.run_id}>
-                  {new Date(run.created_at).toLocaleString()} - {run.n_clusters} clusters (
-                  {run.method})
+                  {new Date(run.created_at).toLocaleString()} - {run.n_clusters}{" "}
+                  clusters ({run.method})
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            <label
+              style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}
+            >
               Report Title:
             </label>
             <input
@@ -102,7 +148,9 @@ export function ReportsPage() {
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            <label
+              style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}
+            >
               Quarter Label:
             </label>
             <input
@@ -124,7 +172,9 @@ export function ReportsPage() {
 
       {metrics && (
         <div style={{ marginBottom: "3rem" }}>
-          <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>Export Charts</h2>
+          <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>
+            Export Charts
+          </h2>
           <ChartExporter metrics={metrics} onChartsExported={setChartPngs} />
         </div>
       )}
@@ -132,21 +182,31 @@ export function ReportsPage() {
       <div style={{ marginBottom: "3rem" }}>
         <button
           onClick={handleGenerate}
-          disabled={!selectedRunId || Object.keys(chartPngs).length === 0 || generateMutation.isPending}
+          disabled={
+            !selectedRunId ||
+            Object.keys(chartPngs).length === 0 ||
+            generateMutation.isPending
+          }
           style={{
             padding: "14px 32px",
             fontSize: "16px",
             fontWeight: 600,
             backgroundColor:
-              !selectedRunId || Object.keys(chartPngs).length === 0 ? "#9ca3af" : "#10b981",
+              !selectedRunId || Object.keys(chartPngs).length === 0
+                ? "#9ca3af"
+                : "#10b981",
             color: "#ffffff",
             border: "none",
             borderRadius: "8px",
             cursor:
-              !selectedRunId || Object.keys(chartPngs).length === 0 ? "not-allowed" : "pointer",
+              !selectedRunId || Object.keys(chartPngs).length === 0
+                ? "not-allowed"
+                : "pointer",
           }}
         >
-          {generateMutation.isPending ? "Generating Report..." : "Generate DOCX Report"}
+          {generateMutation.isPending
+            ? "Generating Report..."
+            : "Generate DOCX Report"}
         </button>
 
         {generateMutation.isPending && (
@@ -158,7 +218,9 @@ export function ReportsPage() {
 
       {reports && reports.length > 0 && (
         <div>
-          <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>Generated Reports</h2>
+          <h2 style={{ marginBottom: "1.5rem", fontSize: "20px" }}>
+            Generated Reports
+          </h2>
           <div
             style={{
               display: "grid",
@@ -177,23 +239,54 @@ export function ReportsPage() {
                   backgroundColor: "#ffffff",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "start",
+                  }}
+                >
                   <div>
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px" }}>
+                    <h3
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        marginBottom: "8px",
+                      }}
+                    >
                       {report.title}
                     </h3>
-                    <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px" }}>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        marginBottom: "8px",
+                      }}
+                    >
                       Generated: {new Date(report.created_at).toLocaleString()}
                     </p>
                     <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                      {report.metrics.total_incidents} incidents | {report.metrics.sev1_count} SEV1 |{" "}
+                      {report.metrics.total_incidents} incidents |{" "}
+                      {report.metrics.sev1_count} SEV1 |{" "}
                       {report.metrics.sev2_count} SEV2
                     </p>
                   </div>
                   <a
-                    href={`http://127.0.0.1:8765/reports/${report.report_id}/download`}
+                    href={
+                      downloadBaseUrl
+                        ? `${downloadBaseUrl}/reports/${report.report_id}/download`
+                        : "#"
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(event) => {
+                      if (!downloadBaseUrl) {
+                        event.preventDefault();
+                        toast.error(
+                          "Backend download URL is not available yet",
+                        );
+                      }
+                    }}
                     style={{
                       padding: "8px 16px",
                       fontSize: "14px",

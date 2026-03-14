@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import deque
 from contextlib import asynccontextmanager
 
@@ -23,8 +24,10 @@ from routers import settings as settings_router
 from security.auth import ensure_bootstrap_admin
 from security.csrf import CSRFMiddleware
 from security.idempotency import IdempotencyMiddleware
+from security.settings import trusted_origins
 
 logger = logging.getLogger(__name__)
+backend_port = int(os.getenv("WORKBENCH_BACKEND_PORT", "8765"))
 
 API_TAGS = [
     {"name": "auth", "description": "Session authentication and user context."},
@@ -168,7 +171,7 @@ app = FastAPI(
     },
     servers=[
         {
-            "url": "http://127.0.0.1:8765",
+            "url": f"http://127.0.0.1:{backend_port}",
             "description": "Local development runtime",
         }
     ],
@@ -178,10 +181,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:1420",
-        "tauri://localhost",
-    ],
+    allow_origins=sorted(trusted_origins()),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

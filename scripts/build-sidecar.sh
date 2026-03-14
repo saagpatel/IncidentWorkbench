@@ -23,6 +23,7 @@ pyinstaller --onefile --name incident-workbench-api main.py --distpath dist/ --c
 # Get target triple for Tauri
 TARGET_TRIPLE=$(rustc --print host-tuple 2>/dev/null || echo "aarch64-apple-darwin")
 DEST="../src-tauri/binaries/incident-workbench-api-${TARGET_TRIPLE}"
+mkdir -p "$(dirname "$DEST")"
 
 # Copy binary
 cp dist/incident-workbench-api "$DEST"
