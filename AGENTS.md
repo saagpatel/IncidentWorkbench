@@ -34,3 +34,47 @@ Use a dedicated worktree for any change touching auth, migrations, queue/webhook
 - Architecture-impacting changes must include an ADR in `/docs/adr/`.
 - Required checks are blocking when `fail` or `not-run`: lint, typecheck, tests, coverage, diff coverage, docs check.
 - Reviewer -> fixer -> reviewer loop is required before merge.
+
+<!-- portfolio-context:start -->
+# Portfolio Context
+
+## What This Project Is
+
+IncidentWorkbench is a local-first desktop app for turning Jira or Slack incident history into review-ready retrospectives. It groups related failures with a local Ollama workflow, summarizes recurring patterns, and generates quarterly DOCX reports without sending operational data to cloud inference.
+
+## Current State
+
+The repo is active product work. The README defines the desktop app, Python sidecar, local clustering flow, report generation, and Stronghold credential posture. Current uncommitted files are unrelated PR-template and lockfile work, so context recovery should remain documentation-only.
+
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Desktop shell | Tauri 2 + Rust |
+| Frontend | React + TypeScript + Vite |
+| Backend sidecar | Python + FastAPI |
+| AI clustering | Ollama (local LLM) |
+| Storage | SQLite |
+| Charts | Recharts |
+| State | TanStack Query |
+| Credentials | Tauri Stronghold |
+
+## How To Run
+
+- Install JavaScript dependencies with `pnpm install`.
+- Install backend dependencies with `pip install -r backend/requirements.txt`.
+- Run the development app with `pnpm dev`.
+- Run the repo's required lint, typecheck, test, coverage, diff coverage, and docs gates before shipping behavior changes.
+
+## Known Risks
+
+- Incident data and credentials are sensitive; keep the workflow local-first.
+- Credentials must stay in Tauri Stronghold rather than plaintext files.
+- Do not replace local Ollama clustering with cloud inference without an explicit privacy and architecture decision.
+- Keep auth, migration, queue, webhook, and secret-storage work in dedicated worktrees.
+
+## Next Recommended Move
+
+Resolve the existing PR-template and lockfile drift separately, then use the README workflow and required gates before changing ingestion, clustering, credential, or report behavior.
+
+<!-- portfolio-context:end -->
