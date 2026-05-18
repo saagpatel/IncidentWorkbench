@@ -153,18 +153,22 @@ def test_slack_export_ingest_inline_json_tracks_updates():
 def test_slack_export_file_path_stays_under_import_dir(monkeypatch, tmp_path: Path):
     """File-path ingestion should resolve only relative paths below the import root."""
     export_dir = tmp_path / "imports"
-    export_dir.mkdir()
-    export_file = export_dir / "incident.json"
+    nested_dir = export_dir / "nested"
+    nested_dir.mkdir(parents=True)
+    export_file = nested_dir / "incident.json"
     export_file.write_text("[]", encoding="utf-8")
     monkeypatch.setattr(settings, "slack_export_dir", export_dir)
 
-    assert _resolve_safe_export_path("incident.json") == export_file
+    assert _resolve_safe_export_path("nested/incident.json") == export_file.resolve()
 
     with pytest.raises(ValueError, match="relative path"):
         _resolve_safe_export_path("../incident.json")
 
     with pytest.raises(ValueError, match="relative path"):
         _resolve_safe_export_path(str(export_file))
+
+    with pytest.raises(ValueError, match=r"\.json"):
+        _resolve_safe_export_path("nested/incident.txt")
 
 
 def test_health_check_hides_dependency_exception_details(monkeypatch):

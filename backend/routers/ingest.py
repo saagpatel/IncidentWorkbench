@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
@@ -28,10 +28,10 @@ AdminUser = Annotated[AuthUser, Depends(require_roles_dependency({"admin"}))]
 
 def _resolve_safe_export_path(raw_path: str) -> Path:
     """Restrict json_path ingestion to a configured safe directory."""
-    if "\x00" in raw_path:
+    if "\x00" in raw_path or "\\" in raw_path:
         raise ValueError("json_path must be a valid relative .json file path")
 
-    requested_path = Path(raw_path)
+    requested_path = PurePosixPath(raw_path)
     if requested_path.is_absolute() or ".." in requested_path.parts:
         raise ValueError("json_path must be a relative path under the import directory")
 
@@ -39,16 +39,19 @@ def _resolve_safe_export_path(raw_path: str) -> Path:
         raise ValueError("json_path must reference a .json file")
 
     allowed_root = settings.slack_export_dir.expanduser().resolve()
-    json_file = (allowed_root / requested_path).resolve()
-    try:
-        json_file.relative_to(allowed_root)
-    except ValueError as exc:
-        raise ValueError("json_path must stay under the configured import directory") from exc
 
-    if not json_file.is_file():
-        raise ValueError("json_path does not exist")
+    for candidate in allowed_root.rglob("*.json"):
+        candidate_path = candidate.resolve()
+        try:
+            candidate_path.relative_to(allowed_root)
+            candidate_relative = candidate.relative_to(allowed_root).as_posix()
+        except ValueError:
+            continue
 
-    return json_file
+        if candidate.is_file() and candidate_relative == requested_path.as_posix():
+            return candidate_path
+
+    raise ValueError("json_path does not exist")
 
 
 @router.post("/jira")
