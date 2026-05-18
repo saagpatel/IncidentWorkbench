@@ -18,16 +18,16 @@ async def health_check() -> dict:
         cursor.fetchone()
         conn.close()
         db_status = "ok"
-    except Exception as e:
-        db_status = f"error: {str(e)}"
+    except Exception:
+        db_status = "error"
 
     # Check Ollama availability
     ollama_client = OllamaClient()
     try:
         is_available = await ollama_client.is_available()
         ollama_status = "ok" if is_available else "unavailable"
-    except Exception as e:
-        ollama_status = f"error: {str(e)}"
+    except Exception:
+        ollama_status = "error"
     finally:
         await ollama_client.close()
 

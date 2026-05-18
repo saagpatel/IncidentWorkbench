@@ -2,11 +2,16 @@
 
 import asyncio
 import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
+from config import settings
 from main import app
 from models.incident import IncidentSource, Severity
+from routers import health as health_router
+from routers.ingest import _resolve_safe_export_path
 from services.jira_client import JiraClient
 from services.normalizer import IncidentNormalizer
 from services.slack_client import SlackClient
@@ -143,6 +148,48 @@ def test_slack_export_ingest_inline_json_tracks_updates():
 
     # Clean up shared DB state.
     client.delete("/incidents", headers=headers)
+
+
+def test_slack_export_file_path_stays_under_import_dir(monkeypatch, tmp_path: Path):
+    """File-path ingestion should resolve only relative paths below the import root."""
+    export_dir = tmp_path / "imports"
+    export_dir.mkdir()
+    export_file = export_dir / "incident.json"
+    export_file.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(settings, "slack_export_dir", export_dir)
+
+    assert _resolve_safe_export_path("incident.json") == export_file
+
+    with pytest.raises(ValueError, match="relative path"):
+        _resolve_safe_export_path("../incident.json")
+
+    with pytest.raises(ValueError, match="relative path"):
+        _resolve_safe_export_path(str(export_file))
+
+
+def test_health_check_hides_dependency_exception_details(monkeypatch):
+    """Health output should not expose stack trace details to callers."""
+
+    def fail_connection():
+        raise RuntimeError("database password leaked in exception")
+
+    class FailingOllamaClient:
+        async def is_available(self) -> bool:
+            raise RuntimeError("ollama token leaked in exception")
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(health_router.db, "get_connection", fail_connection)
+    monkeypatch.setattr(health_router, "OllamaClient", FailingOllamaClient)
+
+    payload = asyncio.run(health_router.health_check())
+
+    assert payload == {
+        "status": "ok",
+        "database": "error",
+        "ollama": "error",
+    }
 
 
 @pytest.mark.asyncio
