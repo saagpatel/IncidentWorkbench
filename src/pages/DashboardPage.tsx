@@ -105,6 +105,8 @@ export function DashboardPage() {
             <option value="jira">Jira</option>
             <option value="slack">Slack</option>
             <option value="slack_export">Slack Export</option>
+            <option value="statuspage">Statuspage</option>
+            <option value="zendesk">Zendesk</option>
           </select>
           <select
             value={filters.severity || ""}

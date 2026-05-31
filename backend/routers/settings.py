@@ -4,17 +4,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from exceptions import JiraConnectionError, SlackAPIError, StatuspageAPIError
+from exceptions import JiraConnectionError, SlackAPIError, StatuspageAPIError, ZendeskAPIError
 from models.api import (
     JiraConnectionTestRequest,
     SlackConnectionTestRequest,
     StatuspageConnectionTestRequest,
     TestConnectionResponse,
+    ZendeskConnectionTestRequest,
 )
 from security.auth import AuthUser, require_roles_dependency
 from services.jira_client import JiraClient
 from services.slack_client import SlackClient
 from services.statuspage_client import StatuspageClient
+from services.zendesk_client import ZendeskClient
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 AdminUser = Annotated[AuthUser, Depends(require_roles_dependency({"admin"}))]
@@ -109,6 +111,40 @@ async def test_statuspage_connection(
             details=statuspage_info,
         )
     except StatuspageAPIError as e:
+        return TestConnectionResponse(
+            success=False,
+            message=e.message,
+            details=e.details,
+        )
+    except Exception as e:
+        return TestConnectionResponse(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            details={},
+        )
+
+
+@router.post("/test-zendesk")
+async def test_zendesk_connection(
+    request: ZendeskConnectionTestRequest,
+    current_user: AdminUser,
+) -> TestConnectionResponse:
+    """Test Zendesk connection with provided credentials."""
+    del current_user
+    client = ZendeskClient(
+        url=request.url,
+        email=request.email,
+        api_token=request.api_token,
+    )
+
+    try:
+        zendesk_info = await client.test_connection()
+        return TestConnectionResponse(
+            success=True,
+            message="Successfully connected to Zendesk",
+            details=zendesk_info,
+        )
+    except ZendeskAPIError as e:
         return TestConnectionResponse(
             success=False,
             message=e.message,

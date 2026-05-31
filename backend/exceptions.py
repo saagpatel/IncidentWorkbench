@@ -43,6 +43,12 @@ class StatuspageAPIError(WorkbenchError):
     pass
 
 
+class ZendeskAPIError(WorkbenchError):
+    """Zendesk API error."""
+
+    pass
+
+
 # AI/ML errors
 class OllamaUnavailableError(WorkbenchError):
     """Ollama service is not available."""

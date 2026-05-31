@@ -15,6 +15,7 @@ export enum IncidentSource {
   SLACK = "slack",
   SLACK_EXPORT = "slack_export",
   STATUSPAGE = "statuspage",
+  ZENDESK = "zendesk",
 }
 
 export interface Incident {
@@ -57,12 +58,22 @@ export interface StatuspageIngestRequest {
   max_pages: number;
 }
 
+export interface ZendeskIngestRequest {
+  url: string;
+  email: string;
+  api_token: string;
+  query: string;
+  max_pages: number;
+}
+
 export interface TestConnectionRequest {
   url?: string;
   email?: string;
   api_token?: string;
   bot_token?: string;
   page_id?: string;
+  api_key?: string;
+  query?: string;
 }
 
 // Response types

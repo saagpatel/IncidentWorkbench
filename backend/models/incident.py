@@ -23,6 +23,7 @@ class IncidentSource(str, Enum):
     SLACK = "slack"
     SLACK_EXPORT = "slack_export"
     STATUSPAGE = "statuspage"
+    ZENDESK = "zendesk"
 
 
 class Incident(BaseModel):
