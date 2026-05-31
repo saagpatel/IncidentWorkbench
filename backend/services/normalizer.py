@@ -26,6 +26,13 @@ class IncidentNormalizer:
         "none": Severity.SEV4,
     }
 
+    ZENDESK_PRIORITY_MAP = {
+        "urgent": Severity.SEV1,
+        "high": Severity.SEV2,
+        "normal": Severity.SEV3,
+        "low": Severity.SEV4,
+    }
+
     @classmethod
     def normalize_jira_issue(cls, issue: dict) -> Incident:
         """Normalize a Jira issue to Incident model.
@@ -180,6 +187,47 @@ class IncidentNormalizer:
             severity=severity,
             title=title,
             description=description,
+            occurred_at=occurred_at,
+            resolved_at=resolved_at,
+            raw_data=raw_data,
+        )
+
+    @classmethod
+    def normalize_zendesk_ticket(cls, ticket: dict) -> Incident:
+        """Normalize a Zendesk ticket to the common Incident model."""
+        external_id = str(ticket.get("id") or "").strip()
+        if not external_id:
+            raise ValueError("Zendesk ticket is missing id")
+
+        title = str(ticket.get("subject") or "Untitled Zendesk Ticket").strip()
+        occurred_at = cls._parse_iso_timestamp(str(ticket.get("created_at") or ""))
+
+        status = str(ticket.get("status") or "").lower()
+        resolved_at = None
+        if status in {"solved", "closed"} and ticket.get("updated_at"):
+            resolved_at = cls._parse_iso_timestamp(str(ticket["updated_at"]))
+
+        priority = str(ticket.get("priority") or "").lower()
+        severity = cls.ZENDESK_PRIORITY_MAP.get(priority, Severity.UNKNOWN)
+        tags = ticket.get("tags") or []
+
+        raw_data = {
+            "status": ticket.get("status"),
+            "priority": ticket.get("priority"),
+            "type": ticket.get("type"),
+            "url": ticket.get("url"),
+            "assignee_id": ticket.get("assignee_id"),
+            "requester_id": ticket.get("requester_id"),
+            "tags": tags if isinstance(tags, list) else [],
+            "via": ticket.get("via"),
+        }
+
+        return Incident(
+            external_id=external_id,
+            source=IncidentSource.ZENDESK,
+            severity=severity,
+            title=title,
+            description=str(ticket.get("description") or ""),
             occurred_at=occurred_at,
             resolved_at=resolved_at,
             raw_data=raw_data,

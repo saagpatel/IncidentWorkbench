@@ -7,6 +7,7 @@ import {
   useTestJiraConnection,
   useTestSlackConnection,
   useTestStatuspageConnection,
+  useTestZendeskConnection,
   useHealth,
   getErrorMessage,
 } from "../api/hooks";
@@ -18,6 +19,8 @@ import {
   saveSlackCredentials,
   readStatuspageCredentials,
   saveStatuspageCredentials,
+  readZendeskCredentials,
+  saveZendeskCredentials,
 } from "../utils/stronghold";
 
 export function SettingsPage() {
@@ -36,10 +39,16 @@ export function SettingsPage() {
   const [statuspagePageId, setStatuspagePageId] = useState("");
   const [statuspageApiKey, setStatuspageApiKey] = useState("");
 
+  // Zendesk state
+  const [zendeskUrl, setZendeskUrl] = useState("");
+  const [zendeskEmail, setZendeskEmail] = useState("");
+  const [zendeskApiToken, setZendeskApiToken] = useState("");
+
   // Test connection mutations
   const testJira = useTestJiraConnection();
   const testSlack = useTestSlackConnection();
   const testStatuspage = useTestStatuspageConnection();
+  const testZendesk = useTestZendeskConnection();
   const { data: health, isLoading: healthLoading } = useHealth();
 
   // Load credentials on mount
@@ -65,6 +74,13 @@ export function SettingsPage() {
     if (statuspageCreds) {
       setStatuspagePageId(statuspageCreds.pageId);
       setStatuspageApiKey(statuspageCreds.apiKey);
+    }
+
+    const zendeskCreds = await readZendeskCredentials();
+    if (zendeskCreds) {
+      setZendeskUrl(zendeskCreds.url);
+      setZendeskEmail(zendeskCreds.email);
+      setZendeskApiToken(zendeskCreds.apiToken);
     }
   };
 
@@ -187,6 +203,49 @@ export function SettingsPage() {
           toast.error(
             `Statuspage connection failed: ${getErrorMessage(error)}`,
           );
+        },
+      },
+    );
+  };
+
+  const handleSaveZendesk = async () => {
+    if (!zendeskUrl || !zendeskEmail || !zendeskApiToken) {
+      toast.error("Please fill in all Zendesk fields");
+      return;
+    }
+    try {
+      await saveZendeskCredentials(zendeskUrl, zendeskEmail, zendeskApiToken);
+      toast.success("Zendesk credentials saved securely");
+    } catch (error: unknown) {
+      toast.error(
+        `Failed to save Zendesk credentials: ${getErrorMessage(error)}`,
+      );
+    }
+  };
+
+  const handleTestZendesk = async () => {
+    if (!zendeskUrl || !zendeskEmail || !zendeskApiToken) {
+      toast.error("Please fill in all Zendesk fields");
+      return;
+    }
+    testZendesk.mutate(
+      {
+        url: zendeskUrl,
+        email: zendeskEmail,
+        api_token: zendeskApiToken,
+      },
+      {
+        onSuccess: (data) => {
+          if (data.success) {
+            toast.success(
+              `Zendesk connection successful! User: ${data.details.user || "Unknown"}`,
+            );
+          } else {
+            toast.error(`Zendesk connection failed: ${data.message}`);
+          }
+        },
+        onError: (error: unknown) => {
+          toast.error(`Zendesk connection failed: ${getErrorMessage(error)}`);
         },
       },
     );
@@ -419,6 +478,70 @@ export function SettingsPage() {
               <div className="details">
                 Page: {testStatuspage.data.details.page_id}, sample incidents:{" "}
                 {testStatuspage.data.details.sample_incidents}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Zendesk Configuration */}
+      <section className="settings-section">
+        <h2>Zendesk Configuration</h2>
+        <div className="form-group">
+          <label htmlFor="zendesk-url">Zendesk URL</label>
+          <input
+            id="zendesk-url"
+            type="text"
+            value={zendeskUrl}
+            onChange={(e) => setZendeskUrl(e.target.value)}
+            placeholder="https://your-company.zendesk.com"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="zendesk-email">Email</label>
+          <input
+            id="zendesk-email"
+            type="email"
+            value={zendeskEmail}
+            onChange={(e) => setZendeskEmail(e.target.value)}
+            placeholder="your.email@company.com"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="zendesk-token">API Token</label>
+          <input
+            id="zendesk-token"
+            type="password"
+            value={zendeskApiToken}
+            onChange={(e) => setZendeskApiToken(e.target.value)}
+            placeholder="Your Zendesk API token"
+          />
+        </div>
+
+        <div className="button-group">
+          <button onClick={handleSaveZendesk} className="btn btn-primary">
+            Save Credentials
+          </button>
+          <button
+            onClick={handleTestZendesk}
+            className="btn btn-secondary"
+            disabled={testZendesk.isPending}
+          >
+            {testZendesk.isPending ? "Testing..." : "Test Connection"}
+          </button>
+        </div>
+
+        {testZendesk.data && (
+          <div
+            className={`message ${testZendesk.data.success ? "success" : "error"}`}
+          >
+            {testZendesk.data.message}
+            {testZendesk.data.success && (
+              <div className="details">
+                User: {testZendesk.data.details.user}, Email:{" "}
+                {testZendesk.data.details.email}
               </div>
             )}
           </div>

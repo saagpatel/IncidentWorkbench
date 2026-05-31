@@ -63,6 +63,21 @@ class StatuspageIngestRequest(BaseModel):
     )
 
 
+class ZendeskIngestRequest(BaseModel):
+    """Request to ingest incidents from Zendesk Support search."""
+
+    url: str = Field(..., min_length=1, description="Zendesk Support instance URL")
+    email: str = Field(..., min_length=1, description="Zendesk user email")
+    api_token: str = Field(..., min_length=1, description="Zendesk API token")
+    query: str = Field(..., min_length=1, description="Zendesk search query for incident tickets")
+    max_pages: int = Field(
+        default=1,
+        ge=1,
+        le=20,
+        description="Maximum Zendesk search result pages to fetch; each page can contain up to 100 tickets",
+    )
+
+
 class JiraConnectionTestRequest(BaseModel):
     """Request to test Jira connection."""
 
@@ -82,6 +97,14 @@ class StatuspageConnectionTestRequest(BaseModel):
 
     page_id: str = Field(..., min_length=1, description="Statuspage page identifier")
     api_key: str = Field(..., min_length=1, description="Statuspage API key")
+
+
+class ZendeskConnectionTestRequest(BaseModel):
+    """Request to test Zendesk connection."""
+
+    url: str = Field(..., min_length=1, description="Zendesk Support instance URL")
+    email: str = Field(..., min_length=1, description="Zendesk user email")
+    api_token: str = Field(..., min_length=1, description="Zendesk API token")
 
 
 class ClusterRequest(BaseModel):

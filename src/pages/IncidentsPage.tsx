@@ -9,6 +9,7 @@ import {
   useIngestSlack,
   useIngestSlackExport,
   useIngestStatuspage,
+  useIngestZendesk,
   getErrorMessage,
 } from "../api/hooks";
 import { IncidentTable } from "../components/IncidentTable";
@@ -17,6 +18,7 @@ import {
   readJiraCredentials,
   readSlackCredentials,
   readStatuspageCredentials,
+  readZendeskCredentials,
 } from "../utils/stronghold";
 
 export function IncidentsPage() {
@@ -30,6 +32,7 @@ export function IncidentsPage() {
   const ingestSlack = useIngestSlack();
   const ingestSlackExport = useIngestSlackExport();
   const ingestStatuspage = useIngestStatuspage();
+  const ingestZendesk = useIngestZendesk();
 
   // Form state
   const [jql, setJql] = useState("project = OPS AND type = Incident");
@@ -39,6 +42,8 @@ export function IncidentsPage() {
   const [slackExportChannel, setSlackExportChannel] = useState("");
   const [statuspageQuery, setStatuspageQuery] = useState("");
   const [statuspageMaxPages, setStatuspageMaxPages] = useState(1);
+  const [zendeskQuery, setZendeskQuery] = useState("type:ticket tags:incident");
+  const [zendeskMaxPages, setZendeskMaxPages] = useState(1);
 
   const handleFetchJira = async () => {
     const creds = await readJiraCredentials();
@@ -156,6 +161,43 @@ export function IncidentsPage() {
         },
         onError: (error: unknown) => {
           toast.error(`Statuspage ingestion failed: ${getErrorMessage(error)}`);
+        },
+      },
+    );
+  };
+
+  const handleFetchZendesk = async () => {
+    const creds = await readZendeskCredentials();
+    if (!creds) {
+      toast.error("Please configure Zendesk credentials in Settings first");
+      return;
+    }
+
+    const query = zendeskQuery.trim();
+    if (!query) {
+      toast.error("Please provide a Zendesk search query");
+      return;
+    }
+
+    ingestZendesk.mutate(
+      {
+        url: creds.url,
+        email: creds.email,
+        api_token: creds.apiToken,
+        query,
+        max_pages: zendeskMaxPages,
+      },
+      {
+        onSuccess: (data) => {
+          const count = data.new_count ?? data.incidents_ingested;
+          const dups = data.duplicate_count ?? 0;
+          const message = `Fetched ${count} new incidents from Zendesk${
+            dups > 0 ? ` (${dups} duplicates skipped)` : ""
+          }`;
+          toast.success(message);
+        },
+        onError: (error: unknown) => {
+          toast.error(`Zendesk ingestion failed: ${getErrorMessage(error)}`);
         },
       },
     );
@@ -360,6 +402,58 @@ export function IncidentsPage() {
                   <strong>Errors:</strong>
                   <ul>
                     {ingestStatuspage.data.errors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Zendesk Ingestion */}
+        <div className="ingest-card">
+          <h3>Fetch from Zendesk</h3>
+          <div className="form-group">
+            <label htmlFor="zendesk-query">Search Query</label>
+            <input
+              id="zendesk-query"
+              type="text"
+              value={zendeskQuery}
+              onChange={(e) => setZendeskQuery(e.target.value)}
+              placeholder="type:ticket tags:incident"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="zendesk-max-pages">Max Pages</label>
+            <input
+              id="zendesk-max-pages"
+              type="number"
+              value={zendeskMaxPages}
+              onChange={(e) => setZendeskMaxPages(parseInt(e.target.value))}
+              min="1"
+              max="20"
+            />
+          </div>
+          <button
+            onClick={handleFetchZendesk}
+            className="btn btn-primary"
+            disabled={ingestZendesk.isPending}
+          >
+            {ingestZendesk.isPending ? "Fetching..." : "Fetch from Zendesk"}
+          </button>
+
+          {ingestZendesk.data && (
+            <div className="result">
+              <p>
+                ✓ Ingested: {ingestZendesk.data.incidents_ingested} | Updated:{" "}
+                {ingestZendesk.data.incidents_updated}
+              </p>
+              {ingestZendesk.data.errors.length > 0 && (
+                <div className="errors">
+                  <strong>Errors:</strong>
+                  <ul>
+                    {ingestZendesk.data.errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
                   </ul>
