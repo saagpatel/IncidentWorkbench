@@ -15,6 +15,7 @@ from routers.ingest import _resolve_safe_export_path
 from services.jira_client import JiraClient
 from services.normalizer import IncidentNormalizer
 from services.slack_client import SlackClient
+from services.statuspage_client import StatuspageClient
 from test_helpers import login_admin
 
 pytestmark = pytest.mark.unit
@@ -81,6 +82,40 @@ def test_normalizer_slack():
     assert incident.resolved_at is not None
 
     print("✓ Slack normalization test passed")
+
+
+def test_normalizer_statuspage():
+    """Test Statuspage incident normalization."""
+    sample_incident = {
+        "id": "abc123",
+        "name": "API outage",
+        "impact": "critical",
+        "status": "resolved",
+        "created_at": "2024-01-15T10:30:00Z",
+        "resolved_at": "2024-01-15T11:15:00Z",
+        "shortlink": "https://stspg.io/example",
+        "components": [{"name": "API"}],
+        "incident_updates": [
+            {
+                "status": "investigating",
+                "display_at": "2024-01-15T10:30:00Z",
+                "body": "<p>Investigating elevated API errors.</p>",
+            }
+        ],
+    }
+
+    incident = IncidentNormalizer.normalize_statuspage_incident(sample_incident)
+
+    assert incident.external_id == "abc123"
+    assert incident.source == IncidentSource.STATUSPAGE
+    assert incident.severity == Severity.SEV1
+    assert incident.title == "API outage"
+    assert "Investigating elevated API errors." in incident.description
+    assert "<p>" not in incident.description
+    assert incident.resolved_at is not None
+    assert incident.raw_data["component_names"] == ["API"]
+
+    print("✓ Statuspage normalization test passed")
 
 
 def test_slack_export_parser():
@@ -223,6 +258,17 @@ async def test_slack_client_mock():
     print("✓ Slack client initialization test passed")
 
 
+@pytest.mark.asyncio
+async def test_statuspage_client_mock():
+    """Test StatuspageClient initialization (without real API call)."""
+    client = StatuspageClient(page_id="page-123", api_key="fake-token")
+
+    assert client.page_id == "page-123"
+    assert client.base_url == "https://api.statuspage.io/v1"
+
+    print("✓ Statuspage client initialization test passed")
+
+
 def main():
     """Run all tests."""
     print("Running Phase 1 tests...\n")
@@ -230,11 +276,13 @@ def main():
     # Synchronous tests
     test_normalizer_jira()
     test_normalizer_slack()
+    test_normalizer_statuspage()
     test_slack_export_parser()
 
     # Async tests
     asyncio.run(test_jira_client_mock())
     asyncio.run(test_slack_client_mock())
+    asyncio.run(test_statuspage_client_mock())
 
     print("\n✓ All Phase 1 tests passed!")
 

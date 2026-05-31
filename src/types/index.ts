@@ -14,6 +14,7 @@ export enum IncidentSource {
   JIRA = "jira",
   SLACK = "slack",
   SLACK_EXPORT = "slack_export",
+  STATUSPAGE = "statuspage",
 }
 
 export interface Incident {
@@ -49,11 +50,19 @@ export interface SlackExportIngestRequest {
   channel_name: string;
 }
 
+export interface StatuspageIngestRequest {
+  page_id: string;
+  api_key: string;
+  query?: string | null;
+  max_pages: number;
+}
+
 export interface TestConnectionRequest {
   url?: string;
   email?: string;
   api_token?: string;
   bot_token?: string;
+  page_id?: string;
 }
 
 // Response types
