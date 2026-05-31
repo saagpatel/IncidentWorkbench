@@ -3,10 +3,21 @@
  */
 
 import { useState } from "react";
-import { useIncidents, useIngestJira, useIngestSlack, useIngestSlackExport, getErrorMessage } from "../api/hooks";
+import {
+  useIncidents,
+  useIngestJira,
+  useIngestSlack,
+  useIngestSlackExport,
+  useIngestStatuspage,
+  getErrorMessage,
+} from "../api/hooks";
 import { IncidentTable } from "../components/IncidentTable";
 import { useToastContext } from "../contexts/ToastContext";
-import { readJiraCredentials, readSlackCredentials } from "../utils/stronghold";
+import {
+  readJiraCredentials,
+  readSlackCredentials,
+  readStatuspageCredentials,
+} from "../utils/stronghold";
 
 export function IncidentsPage() {
   const toast = useToastContext();
@@ -18,6 +29,7 @@ export function IncidentsPage() {
   const ingestJira = useIngestJira();
   const ingestSlack = useIngestSlack();
   const ingestSlackExport = useIngestSlackExport();
+  const ingestStatuspage = useIngestStatuspage();
 
   // Form state
   const [jql, setJql] = useState("project = OPS AND type = Incident");
@@ -25,7 +37,8 @@ export function IncidentsPage() {
   const [slackDaysBack, setSlackDaysBack] = useState(30);
   const [slackExportJson, setSlackExportJson] = useState("");
   const [slackExportChannel, setSlackExportChannel] = useState("");
-
+  const [statuspageQuery, setStatuspageQuery] = useState("");
+  const [statuspageMaxPages, setStatuspageMaxPages] = useState(1);
 
   const handleFetchJira = async () => {
     const creds = await readJiraCredentials();
@@ -53,7 +66,7 @@ export function IncidentsPage() {
         onError: (error: unknown) => {
           toast.error(`Jira ingestion failed: ${getErrorMessage(error)}`);
         },
-      }
+      },
     );
   };
 
@@ -87,7 +100,7 @@ export function IncidentsPage() {
         onError: (error: unknown) => {
           toast.error(`Slack ingestion failed: ${getErrorMessage(error)}`);
         },
-      }
+      },
     );
   };
 
@@ -114,7 +127,37 @@ export function IncidentsPage() {
         onError: (error: unknown) => {
           toast.error(`Slack export import failed: ${getErrorMessage(error)}`);
         },
-      }
+      },
+    );
+  };
+
+  const handleFetchStatuspage = async () => {
+    const creds = await readStatuspageCredentials();
+    if (!creds) {
+      toast.error("Please configure Statuspage credentials in Settings first");
+      return;
+    }
+
+    ingestStatuspage.mutate(
+      {
+        page_id: creds.pageId,
+        api_key: creds.apiKey,
+        query: statuspageQuery.trim() || null,
+        max_pages: statuspageMaxPages,
+      },
+      {
+        onSuccess: (data) => {
+          const count = data.new_count ?? data.incidents_ingested;
+          const dups = data.duplicate_count ?? 0;
+          const message = `Fetched ${count} new incidents from Statuspage${
+            dups > 0 ? ` (${dups} duplicates skipped)` : ""
+          }`;
+          toast.success(message);
+        },
+        onError: (error: unknown) => {
+          toast.error(`Statuspage ingestion failed: ${getErrorMessage(error)}`);
+        },
+      },
     );
   };
 
@@ -255,14 +298,68 @@ export function IncidentsPage() {
           {ingestSlackExport.data && (
             <div className="result">
               <p>
-                ✓ Ingested: {ingestSlackExport.data.incidents_ingested} | Updated:{" "}
-                {ingestSlackExport.data.incidents_updated}
+                ✓ Ingested: {ingestSlackExport.data.incidents_ingested} |
+                Updated: {ingestSlackExport.data.incidents_updated}
               </p>
               {ingestSlackExport.data.errors.length > 0 && (
                 <div className="errors">
                   <strong>Errors:</strong>
                   <ul>
                     {ingestSlackExport.data.errors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Statuspage Ingestion */}
+        <div className="ingest-card">
+          <h3>Fetch from Statuspage</h3>
+          <div className="form-group">
+            <label htmlFor="statuspage-query">Search Query (optional)</label>
+            <input
+              id="statuspage-query"
+              type="text"
+              value={statuspageQuery}
+              onChange={(e) => setStatuspageQuery(e.target.value)}
+              placeholder="database, outage, postmortem"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="statuspage-max-pages">Max Pages</label>
+            <input
+              id="statuspage-max-pages"
+              type="number"
+              value={statuspageMaxPages}
+              onChange={(e) => setStatuspageMaxPages(parseInt(e.target.value))}
+              min="1"
+              max="20"
+            />
+          </div>
+          <button
+            onClick={handleFetchStatuspage}
+            className="btn btn-primary"
+            disabled={ingestStatuspage.isPending}
+          >
+            {ingestStatuspage.isPending
+              ? "Fetching..."
+              : "Fetch from Statuspage"}
+          </button>
+
+          {ingestStatuspage.data && (
+            <div className="result">
+              <p>
+                ✓ Ingested: {ingestStatuspage.data.incidents_ingested} |
+                Updated: {ingestStatuspage.data.incidents_updated}
+              </p>
+              {ingestStatuspage.data.errors.length > 0 && (
+                <div className="errors">
+                  <strong>Errors:</strong>
+                  <ul>
+                    {ingestStatuspage.data.errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
                   </ul>

@@ -68,7 +68,7 @@ export async function unlockVault(passphrase: string): Promise<void> {
     await lockVault();
     console.error("Failed to unlock Stronghold vault:", error);
     throw new Error(
-      "Failed to unlock credentials vault. Check your passphrase or reset the vault."
+      "Failed to unlock credentials vault. Check your passphrase or reset the vault.",
     );
   }
 }
@@ -109,7 +109,10 @@ async function getStrongholdClient(): Promise<Client> {
 /**
  * Save credentials to Stronghold
  */
-export async function saveCredentials(key: string, value: string): Promise<void> {
+export async function saveCredentials(
+  key: string,
+  value: string,
+): Promise<void> {
   const client = await getStrongholdClient();
   const store = client.getStore();
 
@@ -145,7 +148,10 @@ export async function readCredentials(key: string): Promise<string | null> {
       throw error;
     }
     // Distinguish between "not found" (which is fine) and actual errors
-    if (error instanceof Error && error.message.includes("Credential decode error")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Credential decode error")
+    ) {
       throw error;
     }
     console.error("Failed to read credentials:", error);
@@ -170,7 +176,7 @@ export async function deleteCredentials(key: string): Promise<void> {
 export async function saveJiraCredentials(
   url: string,
   email: string,
-  apiToken: string
+  apiToken: string,
 ): Promise<void> {
   await saveCredentials("jira_url", url);
   await saveCredentials("jira_email", email);
@@ -201,7 +207,7 @@ export async function readJiraCredentials(): Promise<{
  */
 export async function saveSlackCredentials(
   botToken: string,
-  userToken?: string
+  userToken?: string,
 ): Promise<void> {
   await saveCredentials("slack_bot_token", botToken);
   if (userToken) {
@@ -227,4 +233,32 @@ export async function readSlackCredentials(): Promise<{
     botToken,
     userToken: userToken || undefined,
   };
+}
+
+/**
+ * Save Statuspage credentials
+ */
+export async function saveStatuspageCredentials(
+  pageId: string,
+  apiKey: string,
+): Promise<void> {
+  await saveCredentials("statuspage_page_id", pageId);
+  await saveCredentials("statuspage_api_key", apiKey);
+}
+
+/**
+ * Read Statuspage credentials
+ */
+export async function readStatuspageCredentials(): Promise<{
+  pageId: string;
+  apiKey: string;
+} | null> {
+  const pageId = await readCredentials("statuspage_page_id");
+  const apiKey = await readCredentials("statuspage_api_key");
+
+  if (!pageId || !apiKey) {
+    return null;
+  }
+
+  return { pageId, apiKey };
 }

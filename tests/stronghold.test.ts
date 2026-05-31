@@ -55,8 +55,10 @@ import {
   isVaultUnlocked,
   lockVault,
   readCredentials,
+  readStatuspageCredentials,
   resetVault,
   saveCredentials,
+  saveStatuspageCredentials,
   unlockVault,
 } from "../src/utils/stronghold";
 
@@ -72,7 +74,7 @@ describe("stronghold vault lifecycle", () => {
 
   it("rejects short passphrases", async () => {
     await expect(unlockVault("too-short")).rejects.toThrow(
-      "Vault passphrase must be at least 12 characters."
+      "Vault passphrase must be at least 12 characters.",
     );
     expect(isVaultUnlocked()).toBe(false);
   });
@@ -83,7 +85,9 @@ describe("stronghold vault lifecycle", () => {
 
     await saveCredentials("jira_api_token", "secret-value");
     expect(mocks.stronghold.save).toHaveBeenCalledTimes(1);
-    await expect(readCredentials("jira_api_token")).resolves.toBe("secret-value");
+    await expect(readCredentials("jira_api_token")).resolves.toBe(
+      "secret-value",
+    );
 
     await deleteCredentials("jira_api_token");
     expect(mocks.stronghold.save).toHaveBeenCalledTimes(2);
@@ -91,11 +95,13 @@ describe("stronghold vault lifecycle", () => {
   });
 
   it("falls back to createClient when existing client is missing", async () => {
-    mocks.stronghold.loadClient.mockRejectedValueOnce(new Error("no client yet"));
+    mocks.stronghold.loadClient.mockRejectedValueOnce(
+      new Error("no client yet"),
+    );
 
     await unlockVault("another secure passphrase");
     expect(mocks.stronghold.createClient).toHaveBeenCalledWith(
-      "incident-workbench-vault"
+      "incident-workbench-vault",
     );
     expect(isVaultUnlocked()).toBe(true);
   });
@@ -111,7 +117,20 @@ describe("stronghold vault lifecycle", () => {
 
   it("throws when reading credentials from a locked vault", async () => {
     await expect(readCredentials("slack_bot_token")).rejects.toBeInstanceOf(
-      VaultLockedError
+      VaultLockedError,
     );
+  });
+
+  it("saves and reads Statuspage credentials from Stronghold", async () => {
+    await unlockVault("statuspage secure passphrase");
+
+    await expect(readStatuspageCredentials()).resolves.toBeNull();
+
+    await saveStatuspageCredentials("page-123", "statuspage-secret");
+
+    await expect(readStatuspageCredentials()).resolves.toEqual({
+      pageId: "page-123",
+      apiKey: "statuspage-secret",
+    });
   });
 });

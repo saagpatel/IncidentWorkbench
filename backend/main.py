@@ -271,11 +271,12 @@ def _status_for_workbench_error(exc: WorkbenchError) -> int:
         OllamaUnavailableError,
         ReportGenerationError,
         SlackAPIError,
+        StatuspageAPIError,
     )
 
     if isinstance(exc, (OllamaUnavailableError, OllamaModelNotFoundError)):
         return 503
-    if isinstance(exc, (JiraConnectionError, SlackAPIError)):
+    if isinstance(exc, (JiraConnectionError, SlackAPIError, StatuspageAPIError)):
         return 502
     if isinstance(exc, JiraQueryError):
         return 422

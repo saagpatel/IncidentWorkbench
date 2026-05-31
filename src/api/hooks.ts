@@ -12,6 +12,7 @@ import type {
   JiraIngestRequest,
   SlackIngestRequest,
   SlackExportIngestRequest,
+  StatuspageIngestRequest,
   IngestResponse,
   TestConnectionResponse,
   HealthResponse,
@@ -28,7 +29,10 @@ import type {
  */
 export function getErrorMessage(error: unknown): string {
   if (error && typeof error === "object") {
-    const err = error as { response?: { data?: { detail?: unknown; message?: string } }; message?: string };
+    const err = error as {
+      response?: { data?: { detail?: unknown; message?: string } };
+      message?: string;
+    };
 
     if (err.response?.data?.detail) {
       return typeof err.response.data.detail === "string"
@@ -75,11 +79,13 @@ export function useIncidents(filters?: {
 
       if (filters?.source) params.append("source", filters.source);
       if (filters?.severity) params.append("severity", filters.severity);
-      if (filters?.offset !== undefined) params.append("offset", filters.offset.toString());
-      if (filters?.limit !== undefined) params.append("limit", filters.limit.toString());
+      if (filters?.offset !== undefined)
+        params.append("offset", filters.offset.toString());
+      if (filters?.limit !== undefined)
+        params.append("limit", filters.limit.toString());
 
       const response = await client.get<IncidentListResponse>(
-        `/incidents?${params.toString()}`
+        `/incidents?${params.toString()}`,
       );
       return response.data;
     },
@@ -94,7 +100,9 @@ export function useIncident(id: number) {
     queryKey: QUERY_KEYS.incident(id),
     queryFn: async () => {
       const client = await getApiClient();
-      const response = await client.get<{ incident: Incident }>(`/incidents/${id}`);
+      const response = await client.get<{ incident: Incident }>(
+        `/incidents/${id}`,
+      );
       return response.data.incident;
     },
     enabled: id > 0,
@@ -110,7 +118,10 @@ export function useIngestJira() {
   return useMutation({
     mutationFn: async (request: JiraIngestRequest) => {
       const client = await getApiClient();
-      const response = await client.post<IngestResponse>("/ingest/jira", request);
+      const response = await client.post<IngestResponse>(
+        "/ingest/jira",
+        request,
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -129,7 +140,10 @@ export function useIngestSlack() {
   return useMutation({
     mutationFn: async (request: SlackIngestRequest) => {
       const client = await getApiClient();
-      const response = await client.post<IngestResponse>("/ingest/slack", request);
+      const response = await client.post<IngestResponse>(
+        "/ingest/slack",
+        request,
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -147,7 +161,31 @@ export function useIngestSlackExport() {
   return useMutation({
     mutationFn: async (request: SlackExportIngestRequest) => {
       const client = await getApiClient();
-      const response = await client.post<IngestResponse>("/ingest/slack-export", request);
+      const response = await client.post<IngestResponse>(
+        "/ingest/slack-export",
+        request,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+    },
+  });
+}
+
+/**
+ * Ingest incidents from Statuspage
+ */
+export function useIngestStatuspage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: StatuspageIngestRequest) => {
+      const client = await getApiClient();
+      const response = await client.post<IngestResponse>(
+        "/ingest/statuspage",
+        request,
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -161,9 +199,16 @@ export function useIngestSlackExport() {
  */
 export function useTestJiraConnection() {
   return useMutation({
-    mutationFn: async (params: { url: string; email: string; api_token: string }) => {
+    mutationFn: async (params: {
+      url: string;
+      email: string;
+      api_token: string;
+    }) => {
       const client = await getApiClient();
-      const response = await client.post<TestConnectionResponse>("/settings/test-jira", params);
+      const response = await client.post<TestConnectionResponse>(
+        "/settings/test-jira",
+        params,
+      );
       return response.data;
     },
   });
@@ -176,7 +221,26 @@ export function useTestSlackConnection() {
   return useMutation({
     mutationFn: async (params: { bot_token: string }) => {
       const client = await getApiClient();
-      const response = await client.post<TestConnectionResponse>("/settings/test-slack", params);
+      const response = await client.post<TestConnectionResponse>(
+        "/settings/test-slack",
+        params,
+      );
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Test Statuspage connection
+ */
+export function useTestStatuspageConnection() {
+  return useMutation({
+    mutationFn: async (params: { page_id: string; api_key: string }) => {
+      const client = await getApiClient();
+      const response = await client.post<TestConnectionResponse>(
+        "/settings/test-statuspage",
+        params,
+      );
       return response.data;
     },
   });
@@ -191,9 +255,10 @@ export function useDeleteAllIncidents() {
   return useMutation({
     mutationFn: async () => {
       const client = await getApiClient();
-      const response = await client.delete<{ deleted: number; message: string }>(
-        "/incidents"
-      );
+      const response = await client.delete<{
+        deleted: number;
+        message: string;
+      }>("/incidents");
       return response.data;
     },
     onSuccess: () => {
@@ -255,7 +320,10 @@ export function useRunClustering() {
   return useMutation({
     mutationFn: async (request: ClusterRequest) => {
       const client = await getApiClient();
-      const response = await client.post<ClusterResponse>("/clusters/run", request);
+      const response = await client.post<ClusterResponse>(
+        "/clusters/run",
+        request,
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -281,7 +349,7 @@ export function useMetrics(filters?: {
       if (filters?.severity) params.append("severity", filters.severity);
 
       const response = await client.get<MetricsResult>(
-        `/incidents/metrics?${params.toString()}`
+        `/incidents/metrics?${params.toString()}`,
       );
       return response.data;
     },
@@ -311,10 +379,10 @@ export function useGenerateReport() {
   return useMutation({
     mutationFn: async (request: ReportGenerateRequest) => {
       const client = await getApiClient();
-      const response = await client.post<{ report_id: string; docx_path: string }>(
-        "/reports/generate",
-        request
-      );
+      const response = await client.post<{
+        report_id: string;
+        docx_path: string;
+      }>("/reports/generate", request);
       return response.data;
     },
     onSuccess: () => {

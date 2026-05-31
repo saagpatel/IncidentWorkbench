@@ -3,13 +3,21 @@
  */
 
 import { useState, useEffect } from "react";
-import { useTestJiraConnection, useTestSlackConnection, useHealth, getErrorMessage } from "../api/hooks";
+import {
+  useTestJiraConnection,
+  useTestSlackConnection,
+  useTestStatuspageConnection,
+  useHealth,
+  getErrorMessage,
+} from "../api/hooks";
 import { useToastContext } from "../contexts/ToastContext";
 import {
   readJiraCredentials,
   saveJiraCredentials,
   readSlackCredentials,
   saveSlackCredentials,
+  readStatuspageCredentials,
+  saveStatuspageCredentials,
 } from "../utils/stronghold";
 
 export function SettingsPage() {
@@ -24,9 +32,14 @@ export function SettingsPage() {
   const [slackBotToken, setSlackBotToken] = useState("");
   const [slackUserToken, setSlackUserToken] = useState("");
 
+  // Statuspage state
+  const [statuspagePageId, setStatuspagePageId] = useState("");
+  const [statuspageApiKey, setStatuspageApiKey] = useState("");
+
   // Test connection mutations
   const testJira = useTestJiraConnection();
   const testSlack = useTestSlackConnection();
+  const testStatuspage = useTestStatuspageConnection();
   const { data: health, isLoading: healthLoading } = useHealth();
 
   // Load credentials on mount
@@ -46,6 +59,12 @@ export function SettingsPage() {
     if (slackCreds) {
       setSlackBotToken(slackCreds.botToken);
       setSlackUserToken(slackCreds.userToken || "");
+    }
+
+    const statuspageCreds = await readStatuspageCredentials();
+    if (statuspageCreds) {
+      setStatuspagePageId(statuspageCreds.pageId);
+      setStatuspageApiKey(statuspageCreds.apiKey);
     }
   };
 
@@ -76,7 +95,9 @@ export function SettingsPage() {
       {
         onSuccess: (data) => {
           if (data.success) {
-            toast.success(`Jira connection successful! Connected to ${data.details.server_title || "server"}`);
+            toast.success(
+              `Jira connection successful! Connected to ${data.details.server_title || "server"}`,
+            );
           } else {
             toast.error(`Jira connection failed: ${data.message}`);
           }
@@ -84,7 +105,7 @@ export function SettingsPage() {
         onError: (error: unknown) => {
           toast.error(`Jira connection failed: ${getErrorMessage(error)}`);
         },
-      }
+      },
     );
   };
 
@@ -97,7 +118,9 @@ export function SettingsPage() {
       await saveSlackCredentials(slackBotToken, slackUserToken);
       toast.success("Slack credentials saved securely");
     } catch (error: unknown) {
-      toast.error(`Failed to save Slack credentials: ${getErrorMessage(error)}`);
+      toast.error(
+        `Failed to save Slack credentials: ${getErrorMessage(error)}`,
+      );
     }
   };
 
@@ -113,7 +136,9 @@ export function SettingsPage() {
       {
         onSuccess: (data) => {
           if (data.success) {
-            toast.success(`Slack connection successful! Team: ${data.details.team || "Unknown"}`);
+            toast.success(
+              `Slack connection successful! Team: ${data.details.team || "Unknown"}`,
+            );
           } else {
             toast.error(`Slack connection failed: ${data.message}`);
           }
@@ -121,7 +146,49 @@ export function SettingsPage() {
         onError: (error: unknown) => {
           toast.error(`Slack connection failed: ${getErrorMessage(error)}`);
         },
-      }
+      },
+    );
+  };
+
+  const handleSaveStatuspage = async () => {
+    if (!statuspagePageId || !statuspageApiKey) {
+      toast.error("Please fill in all Statuspage fields");
+      return;
+    }
+    try {
+      await saveStatuspageCredentials(statuspagePageId, statuspageApiKey);
+      toast.success("Statuspage credentials saved securely");
+    } catch (error: unknown) {
+      toast.error(
+        `Failed to save Statuspage credentials: ${getErrorMessage(error)}`,
+      );
+    }
+  };
+
+  const handleTestStatuspage = async () => {
+    if (!statuspagePageId || !statuspageApiKey) {
+      toast.error("Please fill in all Statuspage fields");
+      return;
+    }
+    testStatuspage.mutate(
+      {
+        page_id: statuspagePageId,
+        api_key: statuspageApiKey,
+      },
+      {
+        onSuccess: (data) => {
+          if (data.success) {
+            toast.success("Statuspage connection successful");
+          } else {
+            toast.error(`Statuspage connection failed: ${data.message}`);
+          }
+        },
+        onError: (error: unknown) => {
+          toast.error(
+            `Statuspage connection failed: ${getErrorMessage(error)}`,
+          );
+        },
+      },
     );
   };
 
@@ -153,7 +220,10 @@ export function SettingsPage() {
             {health?.ollama !== "ok" && (
               <div className="ollama-help">
                 <h3>Required Ollama Models</h3>
-                <p>Incident Workbench requires these models for clustering and analysis:</p>
+                <p>
+                  Incident Workbench requires these models for clustering and
+                  analysis:
+                </p>
                 <ul>
                   <li>
                     <code>nomic-embed-text</code> - Text embedding model
@@ -169,7 +239,11 @@ export function SettingsPage() {
                 </pre>
                 <p>
                   If Ollama is not installed, download it from{" "}
-                  <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer">
+                  <a
+                    href="https://ollama.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     ollama.ai
                   </a>
                 </p>
@@ -229,7 +303,9 @@ export function SettingsPage() {
         </div>
 
         {testJira.data && (
-          <div className={`message ${testJira.data.success ? "success" : "error"}`}>
+          <div
+            className={`message ${testJira.data.success ? "success" : "error"}`}
+          >
             {testJira.data.message}
             {testJira.data.success && testJira.data.details.server_title && (
               <div className="details">
@@ -256,7 +332,9 @@ export function SettingsPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="slack-user-token">User Token (optional, for threads)</label>
+          <label htmlFor="slack-user-token">
+            User Token (optional, for threads)
+          </label>
           <input
             id="slack-user-token"
             type="password"
@@ -280,11 +358,67 @@ export function SettingsPage() {
         </div>
 
         {testSlack.data && (
-          <div className={`message ${testSlack.data.success ? "success" : "error"}`}>
+          <div
+            className={`message ${testSlack.data.success ? "success" : "error"}`}
+          >
             {testSlack.data.message}
             {testSlack.data.success && testSlack.data.details.team && (
               <div className="details">
-                Team: {testSlack.data.details.team}, User: {testSlack.data.details.user}
+                Team: {testSlack.data.details.team}, User:{" "}
+                {testSlack.data.details.user}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Statuspage Configuration */}
+      <section className="settings-section">
+        <h2>Statuspage Configuration</h2>
+        <div className="form-group">
+          <label htmlFor="statuspage-page-id">Page ID</label>
+          <input
+            id="statuspage-page-id"
+            type="text"
+            value={statuspagePageId}
+            onChange={(e) => setStatuspagePageId(e.target.value)}
+            placeholder="your-statuspage-page-id"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="statuspage-api-key">API Key</label>
+          <input
+            id="statuspage-api-key"
+            type="password"
+            value={statuspageApiKey}
+            onChange={(e) => setStatuspageApiKey(e.target.value)}
+            placeholder="Your Statuspage API key"
+          />
+        </div>
+
+        <div className="button-group">
+          <button onClick={handleSaveStatuspage} className="btn btn-primary">
+            Save Credentials
+          </button>
+          <button
+            onClick={handleTestStatuspage}
+            className="btn btn-secondary"
+            disabled={testStatuspage.isPending}
+          >
+            {testStatuspage.isPending ? "Testing..." : "Test Connection"}
+          </button>
+        </div>
+
+        {testStatuspage.data && (
+          <div
+            className={`message ${testStatuspage.data.success ? "success" : "error"}`}
+          >
+            {testStatuspage.data.message}
+            {testStatuspage.data.success && (
+              <div className="details">
+                Page: {testStatuspage.data.details.page_id}, sample incidents:{" "}
+                {testStatuspage.data.details.sample_incidents}
               </div>
             )}
           </div>

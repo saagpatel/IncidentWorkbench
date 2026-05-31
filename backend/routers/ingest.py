@@ -9,18 +9,20 @@ from fastapi import APIRouter, Depends
 
 from config import settings
 from database import db
-from exceptions import JiraConnectionError, JiraQueryError, SlackAPIError
+from exceptions import JiraConnectionError, JiraQueryError, SlackAPIError, StatuspageAPIError
 from models.api import (
     IngestResponse,
     JiraIngestRequest,
     SlackExportIngestRequest,
     SlackIngestRequest,
+    StatuspageIngestRequest,
 )
 from models.incident import IncidentSource
 from security.auth import AuthUser, require_roles_dependency
 from services.jira_client import JiraClient
 from services.normalizer import IncidentNormalizer
 from services.slack_client import SlackClient
+from services.statuspage_client import StatuspageClient
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 AdminUser = Annotated[AuthUser, Depends(require_roles_dependency({"admin"}))]
@@ -52,6 +54,41 @@ def _resolve_safe_export_path(raw_path: str) -> Path:
             return candidate_path
 
     raise ValueError("json_path does not exist")
+
+
+def _upsert_incident(conn, incident) -> bool:
+    """Insert or update an incident. Return true when it existed before."""
+    check = conn.execute(
+        "SELECT id FROM incidents WHERE external_id = ? AND source = ?",
+        (incident.external_id, incident.source.value),
+    ).fetchone()
+    existed_before = check is not None
+
+    conn.execute(
+        """
+        INSERT INTO incidents (
+            external_id, source, severity, title, description,
+            occurred_at, resolved_at, raw_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(external_id, source) DO UPDATE SET
+            severity = excluded.severity,
+            title = excluded.title,
+            description = excluded.description,
+            resolved_at = excluded.resolved_at,
+            raw_data = excluded.raw_data
+        """,
+        (
+            incident.external_id,
+            incident.source.value,
+            incident.severity.value,
+            incident.title,
+            incident.description,
+            incident.occurred_at.isoformat(),
+            incident.resolved_at.isoformat() if incident.resolved_at else None,
+            json.dumps(incident.raw_data),
+        ),
+    )
+    return existed_before
 
 
 @router.post("/jira")
@@ -358,6 +395,58 @@ async def ingest_from_slack_export(
         errors.append(f"Invalid JSON: {str(e)}")
     except SlackAPIError as e:
         errors.append(f"Parse error: {e.message}")
+    except Exception as e:
+        errors.append(f"Unexpected error: {str(e)}")
+
+    return IngestResponse(
+        incidents_ingested=ingested,
+        incidents_updated=updated,
+        errors=errors,
+    )
+
+
+@router.post("/statuspage")
+async def ingest_from_statuspage(
+    request: StatuspageIngestRequest, current_user: AdminUser
+) -> IngestResponse:
+    """Ingest incidents from Atlassian Statuspage."""
+    del current_user
+    errors = []
+    ingested = 0
+    updated = 0
+
+    try:
+        client = StatuspageClient(page_id=request.page_id, api_key=request.api_key)
+        statuspage_incidents = await client.fetch_incidents(
+            query=request.query,
+            max_pages=request.max_pages,
+        )
+
+        conn = db.get_connection()
+        try:
+            for raw_incident in statuspage_incidents:
+                incident_id = raw_incident.get("id", "unknown")
+                try:
+                    incident = IncidentNormalizer.normalize_statuspage_incident(raw_incident)
+                    existed_before = _upsert_incident(conn, incident)
+                    if existed_before:
+                        updated += 1
+                    else:
+                        ingested += 1
+                except Exception as e:
+                    errors.append(
+                        f"Failed to normalize Statuspage incident {incident_id}: {str(e)}"
+                    )
+
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    except StatuspageAPIError as e:
+        errors.append(f"Statuspage API error: {e.message}")
     except Exception as e:
         errors.append(f"Unexpected error: {str(e)}")
 
