@@ -18,6 +18,14 @@ class IncidentNormalizer:
         "Lowest": Severity.SEV4,
     }
 
+    STATUSPAGE_IMPACT_MAP = {
+        "critical": Severity.SEV1,
+        "major": Severity.SEV2,
+        "minor": Severity.SEV3,
+        "maintenance": Severity.SEV4,
+        "none": Severity.SEV4,
+    }
+
     @classmethod
     def normalize_jira_issue(cls, issue: dict) -> Incident:
         """Normalize a Jira issue to Incident model.
@@ -135,6 +143,48 @@ class IncidentNormalizer:
             raw_data=raw_data,
         )
 
+    @classmethod
+    def normalize_statuspage_incident(cls, incident: dict) -> Incident:
+        """Normalize a Statuspage incident to the common Incident model."""
+        external_id = str(incident.get("id") or "").strip()
+        if not external_id:
+            raise ValueError("Statuspage incident is missing id")
+
+        title = str(incident.get("name") or "Untitled Statuspage Incident").strip()
+        occurred_at = cls._parse_iso_timestamp(
+            str(incident.get("created_at") or incident.get("started_at") or "")
+        )
+        resolved_at = None
+        if incident.get("resolved_at"):
+            resolved_at = cls._parse_iso_timestamp(str(incident["resolved_at"]))
+
+        updates = incident.get("incident_updates") or []
+        description = cls._statuspage_description(updates)
+        severity = cls._infer_statuspage_severity(incident)
+        components = incident.get("components") or []
+
+        raw_data = {
+            "status": incident.get("status"),
+            "impact": incident.get("impact"),
+            "impact_override": incident.get("impact_override"),
+            "shortlink": incident.get("shortlink"),
+            "component_names": [
+                component.get("name") for component in components if isinstance(component, dict)
+            ],
+            "update_count": len(updates) if isinstance(updates, list) else 0,
+        }
+
+        return Incident(
+            external_id=external_id,
+            source=IncidentSource.STATUSPAGE,
+            severity=severity,
+            title=title,
+            description=description,
+            occurred_at=occurred_at,
+            resolved_at=resolved_at,
+            raw_data=raw_data,
+        )
+
     @staticmethod
     def _parse_jira_timestamp(ts_str: str) -> datetime:
         """Parse Jira ISO timestamp with timezone suffix.
@@ -180,6 +230,22 @@ class IncidentNormalizer:
             return datetime.utcnow()
 
     @staticmethod
+    def _parse_iso_timestamp(ts_str: str) -> datetime:
+        """Parse an ISO timestamp from APIs that use a trailing Z for UTC."""
+        if not ts_str:
+            return datetime.utcnow()
+
+        try:
+            return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        except ValueError:
+            import logging
+
+            logging.error(
+                f"Failed to parse ISO timestamp '{ts_str}'. Using current time as fallback."
+            )
+            return datetime.utcnow()
+
+    @staticmethod
     def _extract_assignee(assignee: dict | None) -> str:
         """Extract assignee display name from Jira assignee object."""
         if not assignee:
@@ -213,3 +279,34 @@ class IncidentNormalizer:
             return Severity.SEV4
 
         return Severity.UNKNOWN
+
+    @classmethod
+    def _infer_statuspage_severity(cls, incident: dict) -> Severity:
+        impact = str(incident.get("impact_override") or incident.get("impact") or "").lower()
+        if impact in cls.STATUSPAGE_IMPACT_MAP:
+            return cls.STATUSPAGE_IMPACT_MAP[impact]
+
+        status = str(incident.get("status") or "").lower()
+        if status == "resolved":
+            return Severity.SEV4
+        return Severity.UNKNOWN
+
+    @classmethod
+    def _statuspage_description(cls, updates: object) -> str:
+        if not isinstance(updates, list):
+            return ""
+
+        parts = []
+        for update in updates:
+            if not isinstance(update, dict):
+                continue
+            body = cls._strip_html(str(update.get("body") or "")).strip()
+            status = str(update.get("status") or "unknown")
+            display_at = str(update.get("display_at") or update.get("created_at") or "")
+            if body:
+                parts.append(f"[{status} @ {display_at}]: {body}")
+        return "\n\n".join(parts)
+
+    @staticmethod
+    def _strip_html(value: str) -> str:
+        return re.sub(r"<[^>]+>", "", value)

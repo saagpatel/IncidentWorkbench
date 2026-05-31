@@ -4,15 +4,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from exceptions import JiraConnectionError, SlackAPIError
+from exceptions import JiraConnectionError, SlackAPIError, StatuspageAPIError
 from models.api import (
     JiraConnectionTestRequest,
     SlackConnectionTestRequest,
+    StatuspageConnectionTestRequest,
     TestConnectionResponse,
 )
 from security.auth import AuthUser, require_roles_dependency
 from services.jira_client import JiraClient
 from services.slack_client import SlackClient
+from services.statuspage_client import StatuspageClient
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 AdminUser = Annotated[AuthUser, Depends(require_roles_dependency({"admin"}))]
@@ -77,6 +79,36 @@ async def test_slack_connection(
             },
         )
     except SlackAPIError as e:
+        return TestConnectionResponse(
+            success=False,
+            message=e.message,
+            details=e.details,
+        )
+    except Exception as e:
+        return TestConnectionResponse(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            details={},
+        )
+
+
+@router.post("/test-statuspage")
+async def test_statuspage_connection(
+    request: StatuspageConnectionTestRequest,
+    current_user: AdminUser,
+) -> TestConnectionResponse:
+    """Test Statuspage connection with provided credentials."""
+    del current_user
+    client = StatuspageClient(page_id=request.page_id, api_key=request.api_key)
+
+    try:
+        statuspage_info = await client.test_connection()
+        return TestConnectionResponse(
+            success=True,
+            message="Successfully connected to Statuspage",
+            details=statuspage_info,
+        )
+    except StatuspageAPIError as e:
         return TestConnectionResponse(
             success=False,
             message=e.message,

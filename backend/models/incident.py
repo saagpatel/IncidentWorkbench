@@ -22,6 +22,7 @@ class IncidentSource(str, Enum):
     JIRA = "jira"
     SLACK = "slack"
     SLACK_EXPORT = "slack_export"
+    STATUSPAGE = "statuspage"
 
 
 class Incident(BaseModel):

@@ -46,6 +46,23 @@ class SlackExportIngestRequest(BaseModel):
         return self
 
 
+class StatuspageIngestRequest(BaseModel):
+    """Request to ingest incidents from Atlassian Statuspage."""
+
+    page_id: str = Field(..., min_length=1, description="Statuspage page identifier")
+    api_key: str = Field(..., min_length=1, description="Statuspage API key")
+    query: str | None = Field(
+        default=None,
+        description="Optional search query applied by Statuspage to incident fields",
+    )
+    max_pages: int = Field(
+        default=1,
+        ge=1,
+        le=20,
+        description="Maximum Statuspage result pages to fetch; each page can contain up to 100 incidents",
+    )
+
+
 class JiraConnectionTestRequest(BaseModel):
     """Request to test Jira connection."""
 
@@ -58,6 +75,13 @@ class SlackConnectionTestRequest(BaseModel):
     """Request to test Slack connection."""
 
     bot_token: str = Field(..., description="Slack bot token")
+
+
+class StatuspageConnectionTestRequest(BaseModel):
+    """Request to test Statuspage connection."""
+
+    page_id: str = Field(..., min_length=1, description="Statuspage page identifier")
+    api_key: str = Field(..., min_length=1, description="Statuspage API key")
 
 
 class ClusterRequest(BaseModel):

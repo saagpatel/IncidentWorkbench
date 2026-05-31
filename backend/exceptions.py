@@ -37,6 +37,12 @@ class SlackRateLimitError(SlackAPIError):
     pass
 
 
+class StatuspageAPIError(WorkbenchError):
+    """Statuspage API error."""
+
+    pass
+
+
 # AI/ML errors
 class OllamaUnavailableError(WorkbenchError):
     """Ollama service is not available."""
