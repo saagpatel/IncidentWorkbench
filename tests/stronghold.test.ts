@@ -56,9 +56,11 @@ import {
   lockVault,
   readCredentials,
   readStatuspageCredentials,
+  readZendeskCredentials,
   resetVault,
   saveCredentials,
   saveStatuspageCredentials,
+  saveZendeskCredentials,
   unlockVault,
 } from "../src/utils/stronghold";
 
@@ -131,6 +133,24 @@ describe("stronghold vault lifecycle", () => {
     await expect(readStatuspageCredentials()).resolves.toEqual({
       pageId: "page-123",
       apiKey: "statuspage-secret",
+    });
+  });
+
+  it("saves and reads Zendesk credentials from Stronghold", async () => {
+    await unlockVault("zendesk secure passphrase");
+
+    await expect(readZendeskCredentials()).resolves.toBeNull();
+
+    await saveZendeskCredentials(
+      "https://example.zendesk.com",
+      "ops@example.com",
+      "zendesk-secret",
+    );
+
+    await expect(readZendeskCredentials()).resolves.toEqual({
+      url: "https://example.zendesk.com",
+      email: "ops@example.com",
+      apiToken: "zendesk-secret",
     });
   });
 });

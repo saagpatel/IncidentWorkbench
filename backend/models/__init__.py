@@ -11,6 +11,7 @@ from models.api import (
     ReportResponse,
     SlackIngestRequest,
     TestConnectionResponse,
+    ZendeskIngestRequest,
 )
 from models.cluster import ClusterResult, ClusterRunResult
 from models.incident import Incident, IncidentSource, Severity
@@ -30,6 +31,7 @@ __all__ = [
     # API models
     "JiraIngestRequest",
     "SlackIngestRequest",
+    "ZendeskIngestRequest",
     "IngestResponse",
     "ClusterRequest",
     "ClusterResponse",

@@ -5,7 +5,7 @@ FastAPI backend for the Incident Workbench desktop application.
 ## What It Currently Does
 
 - Session auth with cookie + CSRF protection
-- Jira, Slack, and Slack-export incident ingestion
+- Jira, Slack, Slack-export, Statuspage, and Zendesk incident ingestion
 - Incident listing and metrics
 - Ollama-backed embedding and clustering
 - DOCX report generation and downloads
@@ -71,6 +71,8 @@ That gate runs the commands listed in [`.codex/verify.commands`](../.codex/verif
 - `POST /auth/login`
 - `GET /auth/me`
 - `POST /ingest/slack-export`
+- `POST /ingest/statuspage`
+- `POST /ingest/zendesk`
 - `GET /incidents`
 - `GET /incidents/metrics`
 - `POST /clusters/run`
