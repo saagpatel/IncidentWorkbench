@@ -99,11 +99,11 @@ without having to re-derive it from the two paths. Three reasons:
 (Context for anyone landing here without prior exposure.)
 
 IncidentWorkbench is a local-first macOS desktop app for incident
-retrospectives. It ingests incident records from Jira or Slack
-(including paste-and-inspect raw Slack export JSON), groups related
-incidents using a local Ollama LLM, and generates DOCX quarterly
-review reports — without shipping operational data to any cloud
-service. Tauri 2 + React TS frontend, FastAPI Python sidecar for the
+retrospectives. It ingests incident records from Jira, Slack
+(including paste-and-inspect raw Slack export JSON), Statuspage, or
+Zendesk, groups related incidents using a local Ollama LLM, and
+generates DOCX quarterly review reports — without shipping operational
+data to any cloud service. Tauri 2 + React TS frontend, FastAPI Python sidecar for the
 ML grouping, Stronghold encrypted vault for credentials.
 
 For full detail see `README.md`.
