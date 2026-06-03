@@ -22,7 +22,7 @@ Incident Workbench is a local-first desktop app for incident retrospectives. It 
 - Node.js 20+
 - pnpm 9+
 - Rust toolchain (stable) + Tauri v2 prerequisites for macOS
-- Python 3.11+ (for the FastAPI backend sidecar)
+- Python 3.12+ (for the FastAPI backend sidecar)
 - [Ollama](https://ollama.ai) (optional, for AI clustering)
 
 ### Installation
@@ -32,15 +32,17 @@ git clone https://github.com/saagpatel/IncidentWorkbench.git
 cd IncidentWorkbench
 pnpm install
 cp .env.example .env
-# Install Python backend dependencies
-pip install -r backend/requirements.txt
+# Install Python backend dependencies (uses pyproject.toml, not requirements.txt)
+cd backend && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && cd ..
 ```
 
 ### Run (development)
 
 ```bash
-pnpm dev
+bash scripts/dev.sh
 ```
+
+> `pnpm dev` runs only the Vite frontend server. `bash scripts/dev.sh` starts the Python sidecar and the full Tauri desktop shell together.
 
 ## Tech Stack
 
