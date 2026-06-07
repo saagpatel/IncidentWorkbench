@@ -1,7 +1,9 @@
 # Backend Reliability Contract (Codex)
 
 <!-- comm-contract:start -->
+
 ## Communication Contract (Global)
+
 - Follow `/Users/d/.codex/policies/communication/BigPictureReportingV1.md` for all user-facing updates.
 - Use exact section labels from `BigPictureReportingV1.md` for formal delivery, blocker, waiting, risk, decision, or explicit status/report requests.
 - Keep ordinary in-flight updates conversational, warm, PM-readable, operator-grade, and low-noise.
@@ -10,9 +12,11 @@
 <!-- comm-contract:end -->
 
 ## Scope
+
 Applies to backend changes in `/backend`: API, auth, DB schema/migrations, background jobs, external integrations, observability, and security.
 
 ## Mandatory sequence
+
 1. Run a spec pressure test (security + data + contract + failure modes).
 2. Implement the minimal safe change.
 3. Run the read-only reviewer agent and collect findings.
@@ -20,14 +24,17 @@ Applies to backend changes in `/backend`: API, auth, DB schema/migrations, backg
 5. Re-run reviewer + required gates in `.codex/verify.commands`.
 
 ## Blocking conditions
+
 - Any failing required gate blocks completion.
 - Any open critical/high review finding blocks completion.
 - Any migration that skips expand/contract safety checks on live tables blocks completion.
 
 ## No-silent-risk policy
+
 If verification cannot run, completion is blocked unless a temporary waiver includes owner, mitigation issue, and expiry <= 7 days.
 
 ## Worktree policy
+
 Use a dedicated worktree for any change touching auth, migrations, queue/webhook logic, or more than 3 backend files.
 
 ## Definition of Done: Tests + Docs (Blocking)
@@ -45,6 +52,7 @@ Use a dedicated worktree for any change touching auth, migrations, queue/webhook
 - Reviewer -> fixer -> reviewer loop is required before merge.
 
 <!-- portfolio-context:start -->
+
 # Portfolio Context
 
 ## What This Project Is
@@ -57,16 +65,16 @@ The repo is active product work. The README defines the desktop app, Python side
 
 ## Stack
 
-| Layer | Technology |
-|-------|------------|
-| Desktop shell | Tauri 2 + Rust |
-| Frontend | React + TypeScript + Vite |
-| Backend sidecar | Python + FastAPI |
-| AI clustering | Ollama (local LLM) |
-| Storage | SQLite |
-| Charts | Recharts |
-| State | TanStack Query |
-| Credentials | Tauri Stronghold |
+| Layer           | Technology                |
+| --------------- | ------------------------- |
+| Desktop shell   | Tauri 2 + Rust            |
+| Frontend        | React + TypeScript + Vite |
+| Backend sidecar | Python + FastAPI          |
+| AI clustering   | Ollama (local LLM)        |
+| Storage         | SQLite                    |
+| Charts          | Recharts                  |
+| State           | TanStack Query            |
+| Credentials     | Tauri Stronghold          |
 
 ## How To Run
 
