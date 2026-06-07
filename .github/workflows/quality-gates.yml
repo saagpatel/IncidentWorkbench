@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - uses: actions/setup-python@v5
         with:
@@ -23,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci
+          pnpm install --frozen-lockfile
           python -m venv backend/.venv
           backend/.venv/bin/pip install --upgrade pip
           backend/.venv/bin/pip install -e "backend/.[dev]"

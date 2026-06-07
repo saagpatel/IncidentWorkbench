@@ -16,10 +16,11 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build || npm run build:ui
-      - run: npm run perf:bundle
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build || pnpm run build:ui
+      - run: pnpm run perf:bundle
       - run: node scripts/perf/compare-metric.mjs .perf-baselines/bundle.json .perf-results/bundle.json totalBytes 0.08
 
   perf-build:
@@ -32,9 +33,10 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run perf:build
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run perf:build
       - run: node scripts/perf/compare-metric.mjs .perf-baselines/build-time.json .perf-results/build-time.json buildMs 0.15
 
   perf-assets:
@@ -56,9 +58,10 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: MEMORY_MAX_DELTA_MB=5 npm run perf:memory
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: MEMORY_MAX_DELTA_MB=5 pnpm run perf:memory
 
   perf-lighthouse:
     if: ${{ vars.PERF_PROFILE == 'production' }}
@@ -70,10 +73,11 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build || npm run build:ui
-      - run: npm run perf:lhci:prod || npm run perf:lhci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build || pnpm run build:ui
+      - run: pnpm run perf:lhci:prod || pnpm run perf:lhci
 
   perf-api:
     if: ${{ vars.PERF_PROFILE == 'production' && vars.PERF_BASE_URL != '' }}

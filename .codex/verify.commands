@@ -8,6 +8,6 @@ bash scripts/export_openapi.sh
 npx -y @stoplight/spectral-cli lint /tmp/openapi.yaml -r openapi/.spectral.yaml
 bash scripts/check_migration_safety.sh
 backend/.venv/bin/python scripts/migration_rehearsal.py
-cd backend && ./.venv/bin/pip-audit --skip-editable
+cd backend && ./.venv/bin/pip-audit . --progress-spinner off
 cd backend && ./.venv/bin/semgrep --config p/owasp-top-ten --error
 bash scripts/secret_scan.sh

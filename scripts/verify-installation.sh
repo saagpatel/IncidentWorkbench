@@ -100,16 +100,16 @@ done
 if [ -f "package.json" ]; then
     check_passed "package.json exists"
 
-    if npm ci --ignore-scripts --dry-run &> /tmp/incident-workbench-npm-ci.log; then
-        check_passed "package-lock.json is in sync with package.json"
+    if pnpm install --frozen-lockfile --ignore-scripts --offline &> /tmp/incident-workbench-pnpm-install.log; then
+        check_passed "pnpm-lock.yaml is in sync with package.json"
     else
-        check_failed "npm ci would fail. Sync package-lock.json with package.json. See /tmp/incident-workbench-npm-ci.log"
+        check_failed "pnpm install --frozen-lockfile would fail. Sync pnpm-lock.yaml with package.json. See /tmp/incident-workbench-pnpm-install.log"
     fi
 
     if [ -d "node_modules" ]; then
         check_passed "Node modules installed"
     else
-        check_failed "Node modules not installed. Run: npm ci"
+        check_failed "Node modules not installed. Run: pnpm install --frozen-lockfile"
     fi
 else
     check_failed "package.json missing"
@@ -150,7 +150,7 @@ fi
 
 # Test frontend build (if node_modules exists)
 if [ -d "node_modules" ]; then
-    if npm run build &> /tmp/build.log; then
+    if pnpm run build &> /tmp/build.log; then
         check_passed "Frontend builds successfully"
     else
         check_failed "Frontend build failed. Check /tmp/build.log"
@@ -167,7 +167,7 @@ if [ $FAILED -eq 0 ]; then
     echo ""
     echo "Ready to run:"
     echo "  bash scripts/dev.sh        # Development mode"
-    echo "  npm run tauri dev          # Frontend only"
+    echo "  pnpm run tauri dev         # Frontend only"
     echo "  cd backend && .venv/bin/python test_phase0.py  # Backend tests"
 else
     echo -e "${RED}✗ Some checks failed${NC}"
