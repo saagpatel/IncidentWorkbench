@@ -19,7 +19,7 @@ Incident Workbench is a local-first desktop app for incident retrospectives. It 
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.13+
 - pnpm 11.5.2 via Corepack
 - Rust toolchain (stable) + Tauri v2 prerequisites for macOS
 - Python 3.12+ (for the FastAPI backend sidecar)
