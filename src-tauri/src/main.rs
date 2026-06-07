@@ -13,7 +13,10 @@ fn configured_backend_port() -> u16 {
 }
 
 fn dev_mode_enabled() -> bool {
-    matches!(std::env::var("DEV_MODE").ok().as_deref(), Some("1" | "true" | "TRUE"))
+    matches!(
+        std::env::var("DEV_MODE").ok().as_deref(),
+        Some("1" | "true" | "TRUE")
+    )
 }
 
 #[tauri::command]
