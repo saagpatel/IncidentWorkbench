@@ -12,3 +12,22 @@ paths = [
   '''^src-tauri/target/''',
   '''^src-tauri/binaries/'''
 ]
+
+[[allowlists]]
+description = "Audited false-positives (2026-06-07 portfolio audit): tests, mocks, docs, manifests, auditor output"
+paths = [
+  '''(^|/)tests?/''',
+  '''.*\.test\.(ts|tsx|js|jsx|py|rs)$''',
+  '''(^|/)test_[^/]*\.py$''',
+  '''.*_test\.(go|py|rs)$''',
+  '''(^|/)mocks?\.(ts|tsx|js|jsx)$''',
+  '''(^|/)__mocks__/''',
+  '''(^|/)fixtures?/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.vite-dist/''',
+  '''(^|/)out/''',
+  '''(^|/)output/.*\.json$''',
+  '''(^|/)(README|QUICKSTART|CHANGELOG|CONTRIBUTING|DOCS?)\.(md|mdx)$''',
+  '''(^|/)docs?/''',
+  '''(^|/)manifest\.json$''',
+]
