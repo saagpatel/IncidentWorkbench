@@ -2,13 +2,10 @@
 
 <!-- comm-contract:start -->
 
-## Communication Contract (Global)
+## Communication Contract
 
-- Follow `/Users/d/.codex/policies/communication/BigPictureReportingV1.md` for all user-facing updates.
-- Use exact section labels from `BigPictureReportingV1.md` for formal delivery, blocker, waiting, risk, decision, or explicit status/report requests.
-- Keep ordinary in-flight updates conversational, warm, PM-readable, operator-grade, and low-noise.
-- Keep technical details in internal artifacts unless explicitly requested by the user or required by failure, risk, or verification.
-- Honor toggles literally: `simple mode`, `show receipts`, `tech mode`, `debug mode`.
+- Inherit global Codex communication and reporting rules from `/Users/d/.codex/AGENTS.override.md` and `/Users/d/.codex/policies/communication/BigPictureReportingV1.md`.
+- Repo-specific instructions below add project constraints only; do not restate global voice or status-reporting rules here.
 <!-- comm-contract:end -->
 
 ## Scope
@@ -37,19 +34,11 @@ If verification cannot run, completion is blocked unless a temporary waiver incl
 
 Use a dedicated worktree for any change touching auth, migrations, queue/webhook logic, or more than 3 backend files.
 
-## Definition of Done: Tests + Docs (Blocking)
+## Inherited Operating Rules
 
-- Any production code change must include meaningful test updates in the same PR.
-- Meaningful tests must include at least:
-  - one primary behavior assertion
-  - two non-happy-path assertions (edge, boundary, invalid input, or failure mode)
-- Trivial assertions are forbidden (`expect(true).toBe(true)`, snapshot-only without semantic assertions, render-only smoke tests without behavior checks).
-- Mock only external boundaries (network, clock, randomness, third-party SDKs). Do not mock the unit under test.
-- UI changes must cover state matrix: loading, empty, error, success, disabled, focus-visible.
+- Inherit global git, review/fix, testing, docs, UI, security, skill-use, and reporting gates from `/Users/d/.codex/AGENTS.md` and active session instructions.
+- Use `.codex/verify.commands` and `.codex/scripts/run_verify_commands.sh` as this repo-local verification authority when present.
 - API/command surface changes must update generated contract artifacts and request/response examples.
-- Architecture-impacting changes must include an ADR in `/docs/adr/`.
-- Required checks are blocking when `fail` or `not-run`: lint, typecheck, tests, coverage, diff coverage, docs check.
-- Reviewer -> fixer -> reviewer loop is required before merge.
 
 <!-- portfolio-context:start -->
 
