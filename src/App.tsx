@@ -322,9 +322,9 @@ function VaultUnlockScreen({ onUnlocked }: { onUnlocked: () => void }) {
       <div className="vault-card">
         <h1>Unlock Credentials Vault</h1>
         <p>
-          Enter your vault passphrase to access saved Jira and Slack
-          credentials. This passphrase is never hardcoded or stored in source
-          code.
+          Enter your vault passphrase to access saved Jira, Slack, Statuspage,
+          and Zendesk credentials. This passphrase is never hardcoded or stored
+          in source code.
         </p>
         <label htmlFor="vault-passphrase">Vault Passphrase</label>
         <input

@@ -71,7 +71,7 @@ export VITE_BACKEND_URL="http://localhost:${BACKEND_PORT}"
 export VITE_DEV_SERVER_PORT="$FRONTEND_PORT"
 export VITE_HMR_PORT="$HMR_PORT"
 export TAURI_CONFIG="$(printf '{"build":{"devUrl":"http://localhost:%s"}}' "$FRONTEND_PORT")"
-npm run tauri dev &
+pnpm run tauri dev &
 TAURI_PID=$!
 
 # Cleanup on exit

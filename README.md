@@ -4,11 +4,11 @@
 
 > Turn messy incident history into a review-ready story — without opening ten tabs or copy-pasting a single screenshot.
 
-Incident Workbench is a local-first desktop app for incident retrospectives. It pulls incident records from Jira or Slack, groups related failures using a local LLM, surfaces the recurring patterns, and generates polished DOCX quarterly review reports — without shipping your operational data to a cloud service.
+Incident Workbench is a local-first desktop app for incident retrospectives. It pulls incident records from Jira, Slack, Statuspage, or Zendesk, groups related failures using a local LLM, surfaces the recurring patterns, and generates polished DOCX quarterly review reports — without shipping your operational data to a cloud service.
 
 ## Features
 
-- **Multi-Source Ingestion** — Import incidents from Jira, pull from Slack or Statuspage, or paste a Slack export JSON for deterministic offline testing
+- **Multi-Source Ingestion** — Import incidents from Jira, pull from Slack, Statuspage, or Zendesk, or paste a Slack export JSON for deterministic offline testing
 - **LLM-Assisted Clustering** — Group related incidents by theme using local Ollama models; no cloud API keys required
 - **DOCX Report Generation** — One-click quarterly review reports with charts and executive summaries, ready for leadership
 - **Metrics Dashboard** — Severity mix, volume trends, and frequency charts to contextualize the incident landscape before writing a word
@@ -19,10 +19,10 @@ Incident Workbench is a local-first desktop app for incident retrospectives. It 
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 9+
+- Node.js 22.13+
+- pnpm 11.5.2 via Corepack
 - Rust toolchain (stable) + Tauri v2 prerequisites for macOS
-- Python 3.11+ (for the FastAPI backend sidecar)
+- Python 3.12+ (for the FastAPI backend sidecar)
 - [Ollama](https://ollama.ai) (optional, for AI clustering)
 
 ### Installation
@@ -32,15 +32,17 @@ git clone https://github.com/saagpatel/IncidentWorkbench.git
 cd IncidentWorkbench
 pnpm install
 cp .env.example .env
-# Install Python backend dependencies
-pip install -r backend/requirements.txt
+# Install Python backend dependencies (uses pyproject.toml, not requirements.txt)
+cd backend && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && cd ..
 ```
 
 ### Run (development)
 
 ```bash
-pnpm dev
+bash scripts/dev.sh
 ```
+
+> `pnpm dev` runs only the Vite frontend server. `bash scripts/dev.sh` starts the Python sidecar and the full Tauri desktop shell together.
 
 ## Tech Stack
 
@@ -57,7 +59,7 @@ pnpm dev
 
 ## Architecture
 
-IncidentWorkbench is a Tauri 2 desktop app with a Python FastAPI sidecar that handles data ingestion, LLM orchestration, and DOCX generation. The frontend is a React SPA that communicates with both the Rust Tauri layer (credentials, native OS integration) and the Python backend (incident logic). Jira, Slack, and Statuspage are treated as source systems; imported incident records stay local. Ollama runs locally on the same machine and is accessed via HTTP from the sidecar — no cloud inference endpoint is required.
+IncidentWorkbench is a Tauri 2 desktop app with a Python FastAPI sidecar that handles data ingestion, LLM orchestration, and DOCX generation. The frontend is a React SPA that communicates with both the Rust Tauri layer (credentials, native OS integration) and the Python backend (incident logic). Jira, Slack, Statuspage, and Zendesk are treated as source systems; imported incident records stay local. Ollama runs locally on the same machine and is accessed via HTTP from the sidecar — no cloud inference endpoint is required.
 
 ## License
 

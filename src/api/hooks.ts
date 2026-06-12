@@ -13,6 +13,7 @@ import type {
   SlackIngestRequest,
   SlackExportIngestRequest,
   StatuspageIngestRequest,
+  ZendeskIngestRequest,
   IngestResponse,
   TestConnectionResponse,
   HealthResponse,
@@ -195,6 +196,27 @@ export function useIngestStatuspage() {
 }
 
 /**
+ * Ingest incidents from Zendesk
+ */
+export function useIngestZendesk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: ZendeskIngestRequest) => {
+      const client = await getApiClient();
+      const response = await client.post<IngestResponse>(
+        "/ingest/zendesk",
+        request,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+    },
+  });
+}
+
+/**
  * Test Jira connection
  */
 export function useTestJiraConnection() {
@@ -239,6 +261,26 @@ export function useTestStatuspageConnection() {
       const client = await getApiClient();
       const response = await client.post<TestConnectionResponse>(
         "/settings/test-statuspage",
+        params,
+      );
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Test Zendesk connection
+ */
+export function useTestZendeskConnection() {
+  return useMutation({
+    mutationFn: async (params: {
+      url: string;
+      email: string;
+      api_token: string;
+    }) => {
+      const client = await getApiClient();
+      const response = await client.post<TestConnectionResponse>(
+        "/settings/test-zendesk",
         params,
       );
       return response.data;

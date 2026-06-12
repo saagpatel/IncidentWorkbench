@@ -13,7 +13,10 @@ export function DashboardPage() {
     severity?: Severity;
   }>({});
 
-  const [exportedCharts, setExportedCharts] = useState<Record<string, string> | null>(null);
+  const [exportedCharts, setExportedCharts] = useState<Record<
+    string,
+    string
+  > | null>(null);
 
   const { data: metrics, isLoading, error } = useMetrics(filters);
 
@@ -51,7 +54,9 @@ export function DashboardPage() {
   if (!metrics) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
-        <p style={{ fontSize: "18px", color: "#6b7280" }}>No metrics available</p>
+        <p style={{ fontSize: "18px", color: "#6b7280" }}>
+          No metrics available
+        </p>
       </div>
     );
   }
@@ -77,9 +82,21 @@ export function DashboardPage() {
         }}
       >
         <StatCard label="Total Incidents" value={metrics.total_incidents} />
-        <StatCard label="SEV1 Critical" value={metrics.sev1_count} color="#ef4444" />
-        <StatCard label="SEV2 High" value={metrics.sev2_count} color="#f97316" />
-        <StatCard label="SEV3 Medium" value={metrics.sev3_count} color="#eab308" />
+        <StatCard
+          label="SEV1 Critical"
+          value={metrics.sev1_count}
+          color="#ef4444"
+        />
+        <StatCard
+          label="SEV2 High"
+          value={metrics.sev2_count}
+          color="#f97316"
+        />
+        <StatCard
+          label="SEV3 Medium"
+          value={metrics.sev3_count}
+          color="#eab308"
+        />
         <StatCard label="SEV4 Low" value={metrics.sev4_count} color="#3b82f6" />
       </div>
 
@@ -97,21 +114,37 @@ export function DashboardPage() {
           <select
             value={filters.source || ""}
             onChange={(e) =>
-              setFilters({ ...filters, source: e.target.value as IncidentSource | undefined })
+              setFilters({
+                ...filters,
+                source: e.target.value as IncidentSource | undefined,
+              })
             }
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #d1d5db" }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #d1d5db",
+            }}
           >
             <option value="">All Sources</option>
             <option value="jira">Jira</option>
             <option value="slack">Slack</option>
             <option value="slack_export">Slack Export</option>
+            <option value="statuspage">Statuspage</option>
+            <option value="zendesk">Zendesk</option>
           </select>
           <select
             value={filters.severity || ""}
             onChange={(e) =>
-              setFilters({ ...filters, severity: e.target.value as Severity | undefined })
+              setFilters({
+                ...filters,
+                severity: e.target.value as Severity | undefined,
+              })
             }
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #d1d5db" }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #d1d5db",
+            }}
           >
             <option value="">All Severities</option>
             <option value="SEV1">SEV1</option>
@@ -136,13 +169,24 @@ export function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <ChartExporter metrics={metrics} onChartsExported={handleChartsExported} />
+      <ChartExporter
+        metrics={metrics}
+        onChartsExported={handleChartsExported}
+      />
 
       {/* Debug: Show exported chart count */}
       {exportedCharts && (
-        <div style={{ marginTop: "24px", padding: "16px", backgroundColor: "#f0fdf4", borderRadius: "8px" }}>
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "16px",
+            backgroundColor: "#f0fdf4",
+            borderRadius: "8px",
+          }}
+        >
           <p style={{ margin: 0, color: "#15803d" }}>
-            <strong>Debug:</strong> {Object.keys(exportedCharts).length} charts exported and ready for DOCX generation
+            <strong>Debug:</strong> {Object.keys(exportedCharts).length} charts
+            exported and ready for DOCX generation
           </p>
         </div>
       )}
@@ -166,7 +210,9 @@ function StatCard({ label, value, color = "#1f2937" }: StatCardProps) {
         backgroundColor: "#ffffff",
       }}
     >
-      <div style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px" }}>{label}</div>
+      <div style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px" }}>
+        {label}
+      </div>
       <div style={{ fontSize: "28px", fontWeight: 700, color }}>{value}</div>
     </div>
   );

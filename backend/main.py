@@ -33,7 +33,10 @@ API_TAGS = [
     {"name": "auth", "description": "Session authentication and user context."},
     {"name": "health", "description": "Liveness and readiness endpoints."},
     {"name": "settings", "description": "External service connectivity checks."},
-    {"name": "ingest", "description": "Incident ingestion from Jira and Slack."},
+    {
+        "name": "ingest",
+        "description": "Incident ingestion from Jira, Slack, Statuspage, and Zendesk.",
+    },
     {"name": "incidents", "description": "Incident retrieval and maintenance."},
     {"name": "clusters", "description": "Embedding and clustering operations."},
     {"name": "reports", "description": "Report generation and downloads."},
@@ -272,11 +275,12 @@ def _status_for_workbench_error(exc: WorkbenchError) -> int:
         ReportGenerationError,
         SlackAPIError,
         StatuspageAPIError,
+        ZendeskAPIError,
     )
 
     if isinstance(exc, (OllamaUnavailableError, OllamaModelNotFoundError)):
         return 503
-    if isinstance(exc, (JiraConnectionError, SlackAPIError, StatuspageAPIError)):
+    if isinstance(exc, (JiraConnectionError, SlackAPIError, StatuspageAPIError, ZendeskAPIError)):
         return 502
     if isinstance(exc, JiraQueryError):
         return 422

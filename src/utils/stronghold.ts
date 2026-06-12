@@ -262,3 +262,35 @@ export async function readStatuspageCredentials(): Promise<{
 
   return { pageId, apiKey };
 }
+
+/**
+ * Save Zendesk credentials
+ */
+export async function saveZendeskCredentials(
+  url: string,
+  email: string,
+  apiToken: string,
+): Promise<void> {
+  await saveCredentials("zendesk_url", url);
+  await saveCredentials("zendesk_email", email);
+  await saveCredentials("zendesk_api_token", apiToken);
+}
+
+/**
+ * Read Zendesk credentials
+ */
+export async function readZendeskCredentials(): Promise<{
+  url: string;
+  email: string;
+  apiToken: string;
+} | null> {
+  const url = await readCredentials("zendesk_url");
+  const email = await readCredentials("zendesk_email");
+  const apiToken = await readCredentials("zendesk_api_token");
+
+  if (!url || !email || !apiToken) {
+    return null;
+  }
+
+  return { url, email, apiToken };
+}

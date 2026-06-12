@@ -9,13 +9,20 @@ from fastapi import APIRouter, Depends
 
 from config import settings
 from database import db
-from exceptions import JiraConnectionError, JiraQueryError, SlackAPIError, StatuspageAPIError
+from exceptions import (
+    JiraConnectionError,
+    JiraQueryError,
+    SlackAPIError,
+    StatuspageAPIError,
+    ZendeskAPIError,
+)
 from models.api import (
     IngestResponse,
     JiraIngestRequest,
     SlackExportIngestRequest,
     SlackIngestRequest,
     StatuspageIngestRequest,
+    ZendeskIngestRequest,
 )
 from models.incident import IncidentSource
 from security.auth import AuthUser, require_roles_dependency
@@ -23,6 +30,7 @@ from services.jira_client import JiraClient
 from services.normalizer import IncidentNormalizer
 from services.slack_client import SlackClient
 from services.statuspage_client import StatuspageClient
+from services.zendesk_client import ZendeskClient
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 AdminUser = Annotated[AuthUser, Depends(require_roles_dependency({"admin"}))]
@@ -447,6 +455,60 @@ async def ingest_from_statuspage(
 
     except StatuspageAPIError as e:
         errors.append(f"Statuspage API error: {e.message}")
+    except Exception as e:
+        errors.append(f"Unexpected error: {str(e)}")
+
+    return IngestResponse(
+        incidents_ingested=ingested,
+        incidents_updated=updated,
+        errors=errors,
+    )
+
+
+@router.post("/zendesk")
+async def ingest_from_zendesk(
+    request: ZendeskIngestRequest, current_user: AdminUser
+) -> IngestResponse:
+    """Ingest incidents from Zendesk Support tickets."""
+    del current_user
+    errors = []
+    ingested = 0
+    updated = 0
+
+    try:
+        client = ZendeskClient(
+            url=request.url,
+            email=request.email,
+            api_token=request.api_token,
+        )
+        tickets = await client.search_tickets(
+            query=request.query,
+            max_pages=request.max_pages,
+        )
+
+        conn = db.get_connection()
+        try:
+            for raw_ticket in tickets:
+                ticket_id = raw_ticket.get("id", "unknown")
+                try:
+                    incident = IncidentNormalizer.normalize_zendesk_ticket(raw_ticket)
+                    existed_before = _upsert_incident(conn, incident)
+                    if existed_before:
+                        updated += 1
+                    else:
+                        ingested += 1
+                except Exception as e:
+                    errors.append(f"Failed to normalize Zendesk ticket {ticket_id}: {str(e)}")
+
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    except ZendeskAPIError as e:
+        errors.append(f"Zendesk API error: {e.message}")
     except Exception as e:
         errors.append(f"Unexpected error: {str(e)}")
 

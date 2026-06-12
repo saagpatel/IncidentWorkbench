@@ -8,6 +8,8 @@ bash scripts/export_openapi.sh
 npx -y @stoplight/spectral-cli lint /tmp/openapi.yaml -r openapi/.spectral.yaml
 bash scripts/check_migration_safety.sh
 backend/.venv/bin/python scripts/migration_rehearsal.py
-cd backend && ./.venv/bin/pip-audit --skip-editable
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+if [[ "$(uname -s)" != "Linux" ]] || pkg-config --exists glib-2.0 gobject-2.0; then test -x "src-tauri/binaries/incident-workbench-api-$(rustc --print host-tuple)" || bash scripts/build-sidecar.sh; cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings; cargo test --manifest-path src-tauri/Cargo.toml; else echo "Skipping Tauri clippy/test: Linux GTK pkg-config dependencies are unavailable in this job."; fi
+cd backend && ./.venv/bin/pip-audit . --progress-spinner off
 cd backend && ./.venv/bin/semgrep --config p/owasp-top-ten --error
 bash scripts/secret_scan.sh
